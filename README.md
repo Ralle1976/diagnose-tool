@@ -4,60 +4,62 @@ Ein AutoIt-basiertes Tool zur automatischen Verarbeitung von ZIP-Dateien und SQL
 
 ## Features
 
-- Automatisches Entpacken von passwortgeschützten ZIP-Dateien
+### Datenverarbeitung
+- Automatisches Entpacken von ZIP-Dateien
 - SQLite-Datenbankanalyse und -visualisierung
-- Excel-Export mit Template-System
-- Optimierte Performance durch:
-  - Lazy Loading für große Datensätze
-  - Buffer-System für UI-Updates
-  - Proaktives Speichermanagement
+- Erweiterte Filterfunktionen:
+  - Multi-Spalten Filter
+  - Datums- und Zahlenbereichsfilter
+  - Speicherbare Filter-Vorlagen
+- Sortierung nach allen Spalten
+- CSV-Export Funktion
+
+### Performance-Optimierungen
+- Memory Manager für optimierte Ressourcennutzung
+- Proaktives Speichermanagement
+- Effiziente Datenbankabfragen
+- Statusanzeigen für lange Operationen
+
+### Benutzeroberfläche
+- Intuitive Datenbankansicht
+- Fortschrittsanzeigen
 - Drag & Drop Unterstützung
-- Fortschrittsanzeige für lange Operationen
-- Detailliertes Logging-System
 - Konfigurierbare Einstellungen
 
 ## Installation
 
-1. Stellen Sie sicher, dass AutoIt v3 installiert ist
-2. Laden Sie das Repository herunter
-3. Platzieren Sie die SQLite DLL (sqlite3.dll) im Programmverzeichnis
-4. Excel muss für Export-Funktionen installiert sein
-5. Starten Sie die Anwendung über die main.au3
+1. Voraussetzungen:
+   - AutoIt v3 installiert
+   - Windows 7 oder höher
+   - Mindestens 4GB RAM empfohlen
+   - 100MB freier Festplattenspeicher
+
+2. Installation:
+   - Repository herunterladen
+   - SQLite3.dll im Programmverzeichnis platzieren
+   - main.au3 ausführen
 
 ## Konfiguration
 
-Die Einstellungen werden in verschiedenen Dateien gespeichert:
+Die Einstellungen werden in verschiedenen Dateien verwaltet:
 - `settings.ini`: Grundeinstellungen
-- `filter_presets.ini`: Gespeicherte Filter
-- `templates/`: Excel-Vorlagen
-- Weitere Konfigurationsoptionen
-
-## Systemanforderungen
-
-- Windows 7 oder höher
-- AutoIt v3
-- SQLite3.dll
-- Microsoft Excel (für Export-Funktionen)
-- Mindestens 4GB RAM empfohlen
-- 100MB freier Festplattenspeicher
+- `filter_presets.ini`: Gespeicherte Filtervorlagen
+- `templates/`: Excel-Vorlagen (in Entwicklung)
 
 ## Entwicklungsstand
 
-Aktuell implementierte Features:
+Aktuell implementiert:
 - [x] Grundlegende GUI
-- [x] 7-Zip Integration
-- [x] Logging-System
-- [x] ZIP-Extraktion
-- [x] Fortschrittsanzeige
-- [x] Drag & Drop
-- [x] Excel-Export System
+- [x] ZIP-Extraktion mit 7-Zip
+- [x] SQLite-Viewer mit erweiterten Funktionen
+- [x] Fortgeschrittene Filtermöglichkeiten
+- [x] Sortierung und CSV-Export
+- [x] Memory Management
 - [x] Performance-Optimierungen
-- [x] Speichermanagement
 
 In Entwicklung:
-- [ ] Modul-Integration
-- [ ] Unit-Tests
-- [ ] Performance-Tests
+- [ ] Excel-Export System
+- [ ] Umfassende Fehlerbehandlung
 - [ ] Erweiterte Dokumentation
 
 ## Dokumentation
