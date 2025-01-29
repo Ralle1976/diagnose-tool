@@ -1,33 +1,45 @@
 # Diagnose-Tool
 
-Ein AutoIt-basiertes Tool zur automatischen Verarbeitung von ZIP-Dateien und SQLite-Datenbanken.
+Ein AutoIt-basiertes Tool zur automatischen Verarbeitung von ZIP-Dateien und SQLite-Datenbanken mit optimierter Performance.
 
 ## Features
 
 - Automatisches Entpacken von passwortgeschützten ZIP-Dateien
 - SQLite-Datenbankanalyse und -visualisierung
+- Excel-Export mit Template-System
+- Optimierte Performance durch:
+  - Lazy Loading für große Datensätze
+  - Buffer-System für UI-Updates
+  - Proaktives Speichermanagement
 - Drag & Drop Unterstützung
 - Fortschrittsanzeige für lange Operationen
 - Detailliertes Logging-System
 - Konfigurierbare Einstellungen
-- Performance-optimiertes Laden großer Datensätze
 
 ## Installation
 
 1. Stellen Sie sicher, dass AutoIt v3 installiert ist
 2. Laden Sie das Repository herunter
 3. Platzieren Sie die SQLite DLL (sqlite3.dll) im Programmverzeichnis
-4. Starten Sie die Anwendung über die main.au3
+4. Excel muss für Export-Funktionen installiert sein
+5. Starten Sie die Anwendung über die main.au3
 
 ## Konfiguration
 
-Die Einstellungen werden in der `settings.ini` gespeichert und beinhalten:
-- Überwachungsordner
-- ZIP-Passwort
-- Log-Level
-- Chunk-Größe für Lazy Loading
-- Cache-Einstellungen
+Die Einstellungen werden in verschiedenen Dateien gespeichert:
+- `settings.ini`: Grundeinstellungen
+- `filter_presets.ini`: Gespeicherte Filter
+- `templates/`: Excel-Vorlagen
 - Weitere Konfigurationsoptionen
+
+## Systemanforderungen
+
+- Windows 7 oder höher
+- AutoIt v3
+- SQLite3.dll
+- Microsoft Excel (für Export-Funktionen)
+- Mindestens 4GB RAM empfohlen
+- 100MB freier Festplattenspeicher
 
 ## Entwicklungsstand
 
@@ -38,26 +50,22 @@ Aktuell implementierte Features:
 - [x] ZIP-Extraktion
 - [x] Fortschrittsanzeige
 - [x] Drag & Drop
-- [x] Lazy Loading System
+- [x] Excel-Export System
+- [x] Performance-Optimierungen
+- [x] Speichermanagement
 
 In Entwicklung:
-- [ ] Buffer-System
-- [ ] Speichermanagement
-- [ ] Excel-Export System
+- [ ] Modul-Integration
+- [ ] Unit-Tests
+- [ ] Performance-Tests
+- [ ] Erweiterte Dokumentation
 
-## Performance-Optimierungen
+## Dokumentation
 
-Das Tool verwendet verschiedene Techniken zur Optimierung der Performance:
-
-1. Lazy Loading
-   - Chunk-basiertes Laden von Datensätzen
-   - Intelligentes Caching-System
-   - Vorhersagendes Laden der nächsten Chunks
-
-2. Speichermanagement (in Entwicklung)
-   - Automatische Ressourcenfreigabe
-   - Optimierte Datenpuffer
-   - Temporäre Dateiverwaltung
+Ausführliche Dokumentation finden Sie in:
+- HANDOVER.md: Technische Details und Modulübersicht
+- PROGRESS.md: Entwicklungsfortschritt und Planung
+- docs/ENTWICKLUNG.md: Entwicklerdokumentation
 
 ## Lizenz
 
