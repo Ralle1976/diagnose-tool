@@ -24,93 +24,69 @@ Repository: https://github.com/Ralle1976/diagnose-tool
    - INI-Persistenz
    - Multi-Tab Interface
 
-5. SQLite-Viewer (src/lib/sqlite_viewer.au3)
-   - Tabellenansicht
-   - Datenvisualisierung
-   - Export-Funktionen
+5. SQLite-Viewer (src/lib/sqlite_viewer.au3) - AKTUALISIERT
+   - Tabellenansicht mit Sortierung ✓
+   - Erweiterte Filterfunktionen ✓
+     - Multi-Spalten Filter
+     - Verschiedene Vergleichsoperatoren
+     - Filter-Vorlagen
+   - CSV-Export ✓
+   - Memory-Optimiert ✓
 
-6. List-Sorting (src/lib/list_sorting.au3)
-   - Header-Klick Sortierung
-   - Multi-Spalten Support
-   - SQL-Integration
+6. List-Sorting (src/lib/list_sorting.au3) - AKTUALISIERT
+   - Header-Klick Sortierung ✓
+   - Multi-Spalten Support ✓
+   - Automatische Typenerkennung ✓
 
-7. Advanced-Filter (src/lib/advanced_filter.au3)
-   - Komplexe Bedingungen
-   - Filter-History
-   - Vorlagensystem
+7. Advanced-Filter (src/lib/advanced_filter.au3) - NEU
+   - Komplexe Filterbedingungen ✓
+   - Filter-Vorlagen System ✓
+   - Multi-Spalten Unterstützung ✓
 
-8. Excel-Handler (src/lib/excel_handler.au3) - NEU
-   - Template-System
-   - Formatierungsoptionen
-   - Batch-Export Unterstützung
-
-9. Lazy Loading System (src/lib/lazy_loading.au3) - NEU
-   - Chunk-basiertes Laden
-   - Cache-Management
-   - Speicheroptimierung
-
-10. Buffer-System (src/lib/buffer_system.au3) - NEU
-    - UI-Update Optimierung
-    - Batch-Verarbeitung
-    - Queue-Management
-
-11. Memory Manager (src/lib/memory_manager.au3) - NEU
-    - Speicherüberwachung
-    - Temporäre Datei-Verwaltung
-    - Automatische Bereinigung
+8. Memory Manager (src/lib/memory_manager.au3) - NEU
+   - Proaktive Speicherüberwachung ✓
+   - Automatische Ressourcenfreigabe ✓
+   - Temporäre Dateiverwaltung ✓
 
 ### Nächste Schritte
-1. Integration der neuen Module:
-   - Excel-Handler in SQLite-Viewer einbinden
-   - Lazy Loading für große Datensätze aktivieren
-   - Buffer-System für UI-Updates implementieren
-   - Memory Manager in alle Module integrieren
+1. Excel-Export System:
+   - Template-System entwickeln
+   - Formatierungsoptionen
+   - Batch-Export Funktionalität
 
-2. Tests und Optimierung:
-   - Unit-Tests erstellen
-   - Performance-Tests durchführen
-   - Speicherverbrauch analysieren
-   - Fehlerbehandlung verfeinern
+2. Fehlerbehandlung:
+   - Validierung implementieren
+   - Error-Logging ausbauen
+   - Benutzerfreundliche Meldungen
+
+3. Tests und Optimierung:
+   - Performance-Tests
+   - Speicheranalyse
+   - Benutzertests
 
 ### Wichtige Hinweise
 1. AutoIt-Limitierungen:
    - Kein echtes Multi-Threading
-   - Verwendung von Timer/AdlibRegister für async Operationen
-   - RunWait für externe Prozesse
+   - Timer für UI-Updates
+   - Speichermanagement beachten
 
 2. Repository-Struktur:
    - src/: Quellcode
    - docs/: Dokumentation
-   - tests/: Testfälle (noch zu implementieren)
+   - tests/: Testfälle
 
 3. Coding Guidelines:
    - Ausführliche Kommentierung
    - Fehlerbehandlung in jeder Funktion
-   - Logging für wichtige Operationen
+   - Memory Manager nutzen
 
 ### Build & Test
 1. Voraussetzungen:
    - AutoIt v3
-   - SQLite3.dll im Programmverzeichnis
+   - SQLite3.dll
    - 7-Zip (wird automatisch geladen)
-   - Excel für Export-Funktionen
 
 2. Konfiguration:
-   - settings.ini für Grundeinstellungen
-   - filter_presets.ini für gespeicherte Filter
-   - templates/ für Excel-Vorlagen
-
-### Dokumente
-- README.md: Projektübersicht
-- PROGRESS.md: Entwicklungsfortschritt
-- CHANGELOG.md: Änderungshistorie
-- docs/ENTWICKLUNG.md: Technische Details
-
-### Nächster Chat
-Für die Fortsetzung im nächsten Chat:
-1. Modulintegration beginnen
-2. Unit-Tests erstellen
-3. Performance-Tests durchführen
-4. Dokumentation vervollständigen
-
-Kontakt: https://github.com/Ralle1976
+   - settings.ini: Grundeinstellungen
+   - filter_presets.ini: Gespeicherte Filter
+   - templates/: Excel-Vorlagen
