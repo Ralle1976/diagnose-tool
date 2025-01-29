@@ -10,6 +10,7 @@ Ein AutoIt-basiertes Tool zur automatischen Verarbeitung von ZIP-Dateien und SQL
 - Fortschrittsanzeige für lange Operationen
 - Detailliertes Logging-System
 - Konfigurierbare Einstellungen
+- Performance-optimiertes Laden großer Datensätze
 
 ## Installation
 
@@ -24,6 +25,8 @@ Die Einstellungen werden in der `settings.ini` gespeichert und beinhalten:
 - Überwachungsordner
 - ZIP-Passwort
 - Log-Level
+- Chunk-Größe für Lazy Loading
+- Cache-Einstellungen
 - Weitere Konfigurationsoptionen
 
 ## Entwicklungsstand
@@ -35,12 +38,26 @@ Aktuell implementierte Features:
 - [x] ZIP-Extraktion
 - [x] Fortschrittsanzeige
 - [x] Drag & Drop
+- [x] Lazy Loading System
 
 In Entwicklung:
-- [ ] Einstellungs-GUI
-- [ ] Erweiterte SQLite-Visualisierung
-- [ ] Automatische Bereinigung
-- [ ] Kontextmenüs
+- [ ] Buffer-System
+- [ ] Speichermanagement
+- [ ] Excel-Export System
+
+## Performance-Optimierungen
+
+Das Tool verwendet verschiedene Techniken zur Optimierung der Performance:
+
+1. Lazy Loading
+   - Chunk-basiertes Laden von Datensätzen
+   - Intelligentes Caching-System
+   - Vorhersagendes Laden der nächsten Chunks
+
+2. Speichermanagement (in Entwicklung)
+   - Automatische Ressourcenfreigabe
+   - Optimierte Datenpuffer
+   - Temporäre Dateiverwaltung
 
 ## Lizenz
 
