@@ -5,26 +5,28 @@ Ein AutoIt-basiertes Tool zur automatischen Verarbeitung von ZIP-Dateien und SQL
 ## Features
 
 ### Datenverarbeitung
-- Automatisches Entpacken von ZIP-Dateien
-- SQLite-Datenbankanalyse und -visualisierung
+- Automatisches Entpacken von ZIP-Dateien ✓
+- SQLite-Datenbankanalyse und -visualisierung ✓
+- Excel-Export mit Template-System ✓
 - Erweiterte Filterfunktionen:
-  - Multi-Spalten Filter
-  - Datums- und Zahlenbereichsfilter
-  - Speicherbare Filter-Vorlagen
-- Sortierung nach allen Spalten
-- CSV-Export Funktion
+  - Multi-Spalten Filter ✓
+  - Datums- und Zahlenbereichsfilter ✓
+  - Speicherbare Filter-Vorlagen ✓
+- Sortierung nach allen Spalten ✓
+- CSV-Export Funktion ✓
 
 ### Performance-Optimierungen
-- Memory Manager für optimierte Ressourcennutzung
-- Proaktives Speichermanagement
-- Effiziente Datenbankabfragen
-- Statusanzeigen für lange Operationen
+- Memory Manager für optimierte Ressourcennutzung ✓
+- Proaktives Speichermanagement ✓
+- Effiziente Datenbankabfragen ✓
+- Statusanzeigen für lange Operationen ✓
 
 ### Benutzeroberfläche
-- Intuitive Datenbankansicht
-- Fortschrittsanzeigen
-- Drag & Drop Unterstützung
-- Konfigurierbare Einstellungen
+- Intuitive Datenbankansicht ✓
+- Fortschrittsanzeigen ✓
+- Drag & Drop Unterstützung ✓
+- Konfigurierbare Einstellungen ✓
+- Menüsystem ✓
 
 ## Installation
 
@@ -44,30 +46,37 @@ Ein AutoIt-basiertes Tool zur automatischen Verarbeitung von ZIP-Dateien und SQL
 Die Einstellungen werden in verschiedenen Dateien verwaltet:
 - `settings.ini`: Grundeinstellungen
 - `filter_presets.ini`: Gespeicherte Filtervorlagen
-- `templates/`: Excel-Vorlagen (in Entwicklung)
+- `templates/`: Excel-Vorlagen
 
 ## Entwicklungsstand
 
-Aktuell implementiert:
-- [x] Grundlegende GUI
+### Implementiert (✓):
+- [x] Hauptanwendung mit GUI
 - [x] ZIP-Extraktion mit 7-Zip
 - [x] SQLite-Viewer mit erweiterten Funktionen
 - [x] Fortgeschrittene Filtermöglichkeiten
 - [x] Sortierung und CSV-Export
+- [x] Excel-Export System
 - [x] Memory Management
 - [x] Performance-Optimierungen
 
-In Entwicklung:
-- [ ] Excel-Export System
-- [ ] Umfassende Fehlerbehandlung
-- [ ] Erweiterte Dokumentation
+### In Entwicklung:
+- [ ] Erweiterte Fehlerbehandlung
+- [ ] Unit-Tests
+- [ ] Performance-Tests
+- [ ] Benutzerhandbuch
+
+## Nächste Schritte
+1. Fehlerbehandlung vervollständigen
+2. Testing-Framework implementieren
+3. Dokumentation ausbauen
 
 ## Dokumentation
 
 Ausführliche Dokumentation finden Sie in:
 - HANDOVER.md: Technische Details und Modulübersicht
 - PROGRESS.md: Entwicklungsfortschritt und Planung
-- docs/ENTWICKLUNG.md: Entwicklerdokumentation
+- docs/: Entwicklerdokumentation (in Arbeit)
 
 ## Lizenz
 
