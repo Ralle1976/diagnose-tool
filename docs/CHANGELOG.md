@@ -2,6 +2,13 @@
 
 ## [Unreleased] - 2025-01-30
 ### Added
+- Erweiterte Statusanzeigen
+  - Mehrteilige Statusleiste
+  - Echtzeit-Speicherüberwachung
+  - Elementzähler
+  - Zeitverfolgung der letzten Aktion
+  - Grafischer Fortschrittsbalken
+  - Temporäre Statusmeldungen
 - Erweitertes Drag & Drop System
   - Unterstützung für mehrere Dateitypen (ZIP, SQLite, CSV, Excel)
   - Fortschrittsanzeige bei der Verarbeitung
@@ -31,13 +38,14 @@
   - Verbesserte Event-Verarbeitung
   - Moderneres Layout
   - Drag & Drop Integration
+  - Erweiterte Statusanzeigen
 - ZIP-Handler erweitert
   - Integration des Passwort-Managers
   - Verbesserte Fehlerbehandlung
 
 ### Upcoming
-- Erweiterte Statusanzeigen
 - Performance-Optimierungen
   - Lazy Loading für große Datensätze
-  - Cache-System
+  - Cache-System für häufig verwendete Daten
   - Verbesserte SQL-Abfragen
+  - Speicheroptimierung für große Datensätze
