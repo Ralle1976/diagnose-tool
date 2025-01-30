@@ -2,7 +2,12 @@
 
 ## [Unreleased] - 2025-01-30
 ### Added
-- Kontextmenü-System für ListView implementiert
+- Erweitertes Drag & Drop System
+  - Unterstützung für mehrere Dateitypen (ZIP, SQLite, CSV, Excel)
+  - Fortschrittsanzeige bei der Verarbeitung
+  - Validierung der Dateitypen
+  - Benutzerfreundliche Fehlermeldungen
+- Kontextmenü-System für ListView
   - Export-Funktionen (Excel, CSV)
   - Filter-Verwaltung
   - Sortierungsoptionen
@@ -25,10 +30,14 @@
   - Integration des Kontextmenü-Systems
   - Verbesserte Event-Verarbeitung
   - Moderneres Layout
+  - Drag & Drop Integration
 - ZIP-Handler erweitert
   - Integration des Passwort-Managers
   - Verbesserte Fehlerbehandlung
 
 ### Upcoming
-- Drag & Drop Verbesserungen
 - Erweiterte Statusanzeigen
+- Performance-Optimierungen
+  - Lazy Loading für große Datensätze
+  - Cache-System
+  - Verbesserte SQL-Abfragen
