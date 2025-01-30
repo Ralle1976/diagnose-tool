@@ -2,10 +2,13 @@
 #include <GUIConstants.au3>
 #include <File.au3>
 #include <Array.au3>
+#include <GuiListView.au3>
 #include "lib/memory_manager.au3"
 #include "lib/zip_handler.au3"
 #include "lib/sqlite_handler.au3"
+#include "lib/sqlite_viewer.au3"
 #include "lib/logging.au3"
+#include "lib/excel_handler.au3"
 
 ; Globale Variablen
 Global $g_hGUI = 0
@@ -20,46 +23,94 @@ Func _Main()
     _Log_Write("Anwendung gestartet")
     _MemoryManager_Init()
     
-    ; Arbeitsverzeichnis erstellen
-    If Not FileExists($g_sWorkingDir) Then DirCreate($g_sWorkingDir)
+    ; Arbeitsverzeichnis erstellen/prüfen
+    If Not FileExists($g_sWorkingDir) Then 
+        DirCreate($g_sWorkingDir)
+    Else
+        _CleanupWorkDir()
+    EndIf
     
-    ; GUI erstellen
+    ; Excel prüfen
+    Local $bExcelAvailable = _Excel_Init()
+    If @error Then 
+        _Log_Write("Excel nicht verfügbar - Export-Funktionen eingeschränkt")
+    EndIf
+    _Excel_Close()
+    
+    ; Hauptfenster erstellen
     $g_hGUI = GUICreate("Diagnose-Tool", 800, 600)
-    $g_idListview = GUICtrlCreateListView("Datei|Status|Fortschritt", 10, 10, 780, 500)
-    GUICtrlCreateButton("Datei öffnen", 10, 520, 100, 30)
-    GUICtrlCreateButton("Verarbeiten", 120, 520, 100, 30)
+    
+    ; Menü
+    Local $idFile = GUICtrlCreateMenu("&Datei")
+    Local $idFileOpen = GUICtrlCreateMenuItem("Öffnen...", $idFile)
+    Local $idFileExit = GUICtrlCreateMenuItem("Beenden", $idFile)
+    
+    Local $idTools = GUICtrlCreateMenu("&Werkzeuge")
+    Local $idToolsSettings = GUICtrlCreateMenuItem("Einstellungen...", $idTools)
+    
+    Local $idHelp = GUICtrlCreateMenu("&Hilfe")
+    Local $idHelpAbout = GUICtrlCreateMenuItem("Über...", $idHelp)
+    
+    ; Toolbar
+    Local $idToolbar = GUICtrlCreateGroup("", 10, 10, 780, 50)
+    Local $idBtnOpen = GUICtrlCreateButton("Datei öffnen", 20, 25, 100, 30)
+    Local $idBtnProcess = GUICtrlCreateButton("Verarbeiten", 130, 25, 100, 30)
+    GUICtrlSetState($idBtnProcess, $GUI_DISABLE)
+    
+    ; Status
+    Local $idStatus = GUICtrlCreateLabel("Bereit", 240, 30, 300, 20)
+    
+    ; Listview für Dateien
+    $g_idListview = GUICtrlCreateListView("Datei|Status|Fortschritt", 10, 70, 780, 520)
+    _GUICtrlListView_SetExtendedListViewStyle($g_idListview, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT))
+    
     GUISetState(@SW_SHOW, $g_hGUI)
     
-    ; Hauptschleife
+    ; Event Loop
     While 1
         Switch GUIGetMsg()
-            Case $GUI_EVENT_CLOSE
+            Case $GUI_EVENT_CLOSE, $idFileExit
                 ExitLoop
-            Case $idButton1
+                
+            Case $idFileOpen, $idBtnOpen
                 _HandleFileOpen()
-            Case $idButton2
-                _ProcessFiles()
-        WndSwitch
-    EndSwitch
+                If _GUICtrlListView_GetItemCount($g_idListview) > 0 Then
+                    GUICtrlSetState($idBtnProcess, $GUI_ENABLE)
+                EndIf
+                
+            Case $idBtnProcess
+                GUICtrlSetState($idBtnProcess, $GUI_DISABLE)
+                GUICtrlSetData($idStatus, "Verarbeite Dateien...")
+                _ProcessFiles($idStatus)
+                GUICtrlSetData($idStatus, "Bereit")
+                GUICtrlSetState($idBtnProcess, $GUI_ENABLE)
+                
+            Case $idToolsSettings
+                ; TODO: Settings-Dialog implementieren
+                
+            Case $idHelpAbout
+                MsgBox(64, "Über", "Diagnose-Tool" & @CRLF & @CRLF & "Version: 1.0" & @CRLF & "© 2025")
+        EndSwitch
+    WEnd
     
     ; Aufräumen
     _Cleanup()
-    Exit
 EndFunc
 
-; Dateiverarbeitung
-Func _ProcessFiles()
+; Dateien verarbeiten
+Func _ProcessFiles($idStatus)
     If $g_bProcessing Then Return
     
     $g_bProcessing = True
-    Local $aItems = _GUICtrlListView_GetItemCount($g_idListview)
+    Local $iItems = _GUICtrlListView_GetItemCount($g_idListview)
     
-    For $i = 0 To $aItems - 1
+    For $i = 0 To $iItems - 1
         Local $sFilePath = _GUICtrlListView_GetItemText($g_idListview, $i, 0)
         _GUICtrlListView_SetItemText($g_idListview, $i, 1, "Verarbeite...")
+        GUICtrlSetData($idStatus, "Verarbeite: " & $sFilePath)
         
-        ; ZIP-Datei verarbeiten
-        Local $sExtractPath = _ZIP_Extract($sFilePath)
+        ; ZIP extrahieren
+        Local $sExtractPath = _ZIP_Extract($sFilePath, $g_sWorkingDir)
         If @error Then
             _GUICtrlListView_SetItemText($g_idListview, $i, 1, "Fehler: ZIP")
             ContinueLoop
@@ -70,8 +121,8 @@ Func _ProcessFiles()
         If Not @error Then
             For $j = 1 To $aDBFiles[0]
                 Local $sDBPath = $sExtractPath & "\" & $aDBFiles[$j]
-                _DB_Analyze($sDBPath)
-                _MemoryManager_Cleanup()
+                GUICtrlSetData($idStatus, "Analysiere DB: " & $aDBFiles[$j])
+                _SQLiteViewer_Show($sDBPath)
             Next
         EndIf
         
@@ -82,14 +133,7 @@ Func _ProcessFiles()
     $g_bProcessing = False
 EndFunc
 
-; Aufräumen beim Beenden
-Func _Cleanup()
-    _Log_Write("Anwendung wird beendet")
-    _MemoryManager_Cleanup()
-    FileDelete($g_sWorkingDir)
-EndFunc
-
-; Drag & Drop Handler
+; Datei öffnen
 Func _HandleFileOpen()
     Local $sFilePath = FileOpenDialog("ZIP-Datei öffnen", "", "ZIP (*.zip)")
     If @error Then Return
@@ -98,6 +142,24 @@ Func _HandleFileOpen()
     _GUICtrlListView_AddItem($g_idListview, $sFileName)
     _GUICtrlListView_SetItemText($g_idListview, _GUICtrlListView_GetItemCount($g_idListview) - 1, 1, "Bereit")
     _GUICtrlListView_SetItemText($g_idListview, _GUICtrlListView_GetItemCount($g_idListview) - 1, 2, "0%")
+EndFunc
+
+; Arbeitsverzeichnis bereinigen
+Func _CleanupWorkDir()
+    Local $aFiles = _FileListToArray($g_sWorkingDir, "*.*", $FLTA_FILESFOLDERS)
+    If Not @error Then
+        For $i = 1 To $aFiles[0]
+            FileDelete($g_sWorkingDir & "\" & $aFiles[$i])
+        Next
+    EndIf
+EndFunc
+
+; Aufräumen beim Beenden
+Func _Cleanup()
+    _Log_Write("Anwendung wird beendet")
+    _MemoryManager_Cleanup()
+    _CleanupWorkDir()
+    DirRemove($g_sWorkingDir, 1)
 EndFunc
 
 ; Programm starten
