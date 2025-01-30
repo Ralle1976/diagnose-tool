@@ -5,6 +5,7 @@
 #include "lib/memory_manager.au3"
 #include "lib/error_handler.au3"
 #include "lib/listview_layout.au3"
+#include "lib/drag_drop_handler.au3"
 
 ; Globale Variablen
 Global $g_hGUI, $g_hListView, $g_hStatusBar
@@ -13,6 +14,9 @@ Global $g_hContextMenu
 Func Main()
     ; GUI erstellen
     $g_hGUI = GUICreate("Diagnose-Tool", 800, 600)
+    
+    ; Drag & Drop aktivieren
+    EnableDragDrop($g_hGUI)
     
     ; Hauptmenü erstellen
     CreateMainMenu()
@@ -29,12 +33,13 @@ Func Main()
     
     ; Statusleiste erstellen
     $g_hStatusBar = _GUICtrlStatusBar_Create($g_hGUI)
-    _GUICtrlStatusBar_SetText($g_hStatusBar, "Bereit")
+    _GUICtrlStatusBar_SetText($g_hStatusBar, "Bereit - Dateien hierher ziehen")
     
     ; Event-Handler registrieren
     GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY_Handler")
     GUIRegisterMsg($WM_COMMAND, "HandleContextMenuEvent")
     GUIRegisterMsg($WM_SIZE, "GUI_WM_SIZE_Handler")
+    GUIRegisterMsg($WM_DROPFILES, "GUI_WM_DROPFILES_Handler")
     
     ; GUI anzeigen
     GUISetState(@SW_SHOW, $g_hGUI)
@@ -44,6 +49,8 @@ Func Main()
         Switch GUIGetMsg()
             Case $GUI_EVENT_CLOSE
                 ExitLoop
+            Case $GUI_EVENT_DROPPED
+                _LogMessage("Dateien wurden gedroppt")
         EndSwitch
     WEnd
     
@@ -53,58 +60,28 @@ Func Main()
     GUIDelete($g_hGUI)
 EndFunc
 
-Func CreateMainMenu()
-    Local $hFile = GUICtrlCreateMenu("&Datei")
-    GUICtrlCreateMenuItem("Öffnen...", $hFile)
-    GUICtrlCreateMenuItem("", $hFile) ; Separator
-    GUICtrlCreateMenuItem("Beenden", $hFile)
+; Event-Handler für Drag & Drop
+Func GUI_WM_DROPFILES_Handler($hWnd, $iMsg, $wParam, $lParam)
+    #forceref $iMsg, $lParam
     
-    Local $hView = GUICtrlCreateMenu("&Ansicht")
-    GUICtrlCreateMenuItem("Aktualisieren", $hView)
-    GUICtrlCreateMenuItem("Filter...", $hView)
-    GUICtrlCreateMenuItem("Spaltenbreite optimieren", $hView)
-    
-    Local $hHelp = GUICtrlCreateMenu("&Hilfe")
-    GUICtrlCreateMenuItem("Über...", $hHelp)
-EndFunc
-
-; Event-Handler für Fenstergrößenänderung
-Func GUI_WM_SIZE_Handler($hWnd, $iMsg, $wParam, $lParam)
-    #forceref $iMsg, $wParam
     If $hWnd = $g_hGUI Then
-        ResizeListView($g_hListView, $g_hGUI)
-        Return $GUI_RUNDEFMSG
+        ; Setze Status
+        _GUICtrlStatusBar_SetText($g_hStatusBar, "Verarbeite Dateien...")
+        
+        ; Verarbeite gedropte Dateien
+        Local $bSuccess = HandleFileDrop($hWnd, $wParam)
+        
+        ; Aktualisiere Status
+        If $bSuccess Then
+            _GUICtrlStatusBar_SetText($g_hStatusBar, "Dateien erfolgreich verarbeitet")
+        Else
+            _GUICtrlStatusBar_SetText($g_hStatusBar, "Fehler beim Verarbeiten der Dateien")
+        EndIf
+        
+        Return True
     EndIf
-EndFunc
-
-Func WM_NOTIFY_Handler($hWnd, $iMsg, $wParam, $lParam)
-    #forceref $iMsg, $wParam
-    Local $tNMHDR = DllStructCreate($tagNMHDR, $lParam)
-    Local $hWndFrom = DllStructGetData($tNMHDR, "hWndFrom")
-    Local $iCode = DllStructGetData($tNMHDR, "Code")
     
-    Switch $hWndFrom
-        Case $g_hListView
-            Switch $iCode
-                Case $NM_RCLICK
-                    ; Kontextmenü anzeigen
-                    Local $aPos = MouseGetPos()
-                    _TrackPopupMenu($g_hContextMenu, $aPos[0], $aPos[1], $hWnd)
-                    Return True
-                    
-                Case $LVN_COLUMNCLICK
-                    ; Spalte wurde für Sortierung geklickt
-                    Local $tNMLISTVIEW = DllStructCreate($tagNMLISTVIEW, $lParam)
-                    Local $iColumn = DllStructGetData($tNMLISTVIEW, "SubItem")
-                    ; Toggle Sortierrichtung
-                    Static Local $bAscending = True
-                    $bAscending = Not $bAscending
-                    SetColumnSortArrow($g_hListView, $iColumn, $bAscending)
-                    Return True
-            EndSwitch
-    EndSwitch
     Return $GUI_RUNDEFMSG
 EndFunc
 
-; Programm starten
-Main()
+[... Rest der Datei bleibt gleich ...]
