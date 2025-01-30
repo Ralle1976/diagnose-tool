@@ -1,166 +1,217 @@
-#include-once
-#include <GUIConstants.au3>
-#include <File.au3>
-#include <Array.au3>
+#include <GUIConstantsEx.au3>
+#include <WindowsConstants.au3>
 #include <GuiListView.au3>
-#include "lib/memory_manager.au3"
-#include "lib/zip_handler.au3"
+#include <File.au3>
+#include "lib/error_handler.au3"
 #include "lib/sqlite_handler.au3"
-#include "lib/sqlite_viewer.au3"
-#include "lib/logging.au3"
+#include "lib/zip_handler.au3"
 #include "lib/excel_handler.au3"
+#include "lib/memory_manager.au3"
+#include "lib/logging.au3"
 
 ; Globale Variablen
-Global $g_hGUI = 0
-Global $g_idListview = 0
-Global $g_sWorkingDir = @ScriptDir & "\work"
-Global $g_bProcessing = False
+Global $g_hGUI, $g_hListView
+Global $g_hStatusLabel
+Global $g_sWorkingDir = @ScriptDir & "\temp"
+Global $g_sLogFile = @ScriptDir & "\logs\app.log"
 
-; Hauptfunktion
-Func _Main()
-    ; Initialisierung
-    _Log_Initialize()
-    _Log_Write("Anwendung gestartet")
-    _MemoryManager_Init()
-    
-    ; Arbeitsverzeichnis erstellen/prüfen
-    If Not FileExists($g_sWorkingDir) Then 
-        DirCreate($g_sWorkingDir)
-    Else
-        _CleanupWorkDir()
-    EndIf
-    
-    ; Excel prüfen
-    Local $bExcelAvailable = _Excel_Init()
-    If @error Then 
-        _Log_Write("Excel nicht verfügbar - Export-Funktionen eingeschränkt")
-    EndIf
-    _Excel_Close()
-    
-    ; Hauptfenster erstellen
+; GUI Erstellen
+Func _Main_CreateGUI()
+    ; Hauptfenster
     $g_hGUI = GUICreate("Diagnose-Tool", 800, 600)
     
-    ; Menü
-    Local $idFile = GUICtrlCreateMenu("&Datei")
-    Local $idFileOpen = GUICtrlCreateMenuItem("Öffnen...", $idFile)
-    Local $idFileExit = GUICtrlCreateMenuItem("Beenden", $idFile)
+    ; Menü erstellen
+    Local $idFileMenu = GUICtrlCreateMenu("&Datei")
+    Local $idFileOpen = GUICtrlCreateMenuItem("ZIP öffnen", $idFileMenu)
+    Local $idDBOpen = GUICtrlCreateMenuItem("Datenbank öffnen", $idFileMenu)
+    GUICtrlCreateMenuItem("", $idFileMenu)
+    Local $idFileExit = GUICtrlCreateMenuItem("Beenden", $idFileMenu)
     
-    Local $idTools = GUICtrlCreateMenu("&Werkzeuge")
-    Local $idToolsSettings = GUICtrlCreateMenuItem("Einstellungen...", $idTools)
-    
-    Local $idHelp = GUICtrlCreateMenu("&Hilfe")
-    Local $idHelpAbout = GUICtrlCreateMenuItem("Über...", $idHelp)
+    Local $idExportMenu = GUICtrlCreateMenu("&Export")
+    Local $idExportExcel = GUICtrlCreateMenuItem("Nach Excel", $idExportMenu)
+    Local $idExportCSV = GUICtrlCreateMenuItem("Nach CSV", $idExportMenu)
     
     ; Toolbar
-    Local $idToolbar = GUICtrlCreateGroup("", 10, 10, 780, 50)
-    Local $idBtnOpen = GUICtrlCreateButton("Datei öffnen", 20, 25, 100, 30)
-    Local $idBtnProcess = GUICtrlCreateButton("Verarbeiten", 130, 25, 100, 30)
-    GUICtrlSetState($idBtnProcess, $GUI_DISABLE)
+    Local $idToolbar = GUICtrlCreateGroup("Werkzeuge", 10, 10, 780, 50)
+    Local $idRefresh = GUICtrlCreateButton("Aktualisieren", 20, 30, 100, 25)
+    Local $idFilter = GUICtrlCreateButton("Filter", 130, 30, 100, 25)
+    Local $idClear = GUICtrlCreateButton("Zurücksetzen", 240, 30, 100, 25)
+    GUICtrlCreateGroup("", -99, -99, 1, 1)
     
-    ; Status
-    Local $idStatus = GUICtrlCreateLabel("Bereit", 240, 30, 300, 20)
+    ; ListView für Daten
+    $g_hListView = GUICtrlCreateListView("", 10, 70, 780, 480)
     
-    ; Listview für Dateien
-    $g_idListview = GUICtrlCreateListView("Datei|Status|Fortschritt", 10, 70, 780, 520)
-    _GUICtrlListView_SetExtendedListViewStyle($g_idListview, BitOR($LVS_EX_GRIDLINES, $LVS_EX_FULLROWSELECT))
+    ; Status Label
+    $g_hStatusLabel = GUICtrlCreateLabel("Bereit", 10, 560, 780, 20)
     
-    GUISetState(@SW_SHOW, $g_hGUI)
-    
-    ; Event Loop
-    While 1
-        Switch GUIGetMsg()
-            Case $GUI_EVENT_CLOSE, $idFileExit
-                ExitLoop
-                
-            Case $idFileOpen, $idBtnOpen
-                _HandleFileOpen()
-                If _GUICtrlListView_GetItemCount($g_idListview) > 0 Then
-                    GUICtrlSetState($idBtnProcess, $GUI_ENABLE)
-                EndIf
-                
-            Case $idBtnProcess
-                GUICtrlSetState($idBtnProcess, $GUI_DISABLE)
-                GUICtrlSetData($idStatus, "Verarbeite Dateien...")
-                _ProcessFiles($idStatus)
-                GUICtrlSetData($idStatus, "Bereit")
-                GUICtrlSetState($idBtnProcess, $GUI_ENABLE)
-                
-            Case $idToolsSettings
-                ; TODO: Settings-Dialog implementieren
-                
-            Case $idHelpAbout
-                MsgBox(64, "Über", "Diagnose-Tool" & @CRLF & @CRLF & "Version: 1.0" & @CRLF & "© 2025")
-        EndSwitch
-    WEnd
-    
-    ; Aufräumen
-    _Cleanup()
+    GUISetState(@SW_SHOW)
+    Return True
 EndFunc
 
-; Dateien verarbeiten
-Func _ProcessFiles($idStatus)
-    If $g_bProcessing Then Return
+; Hauptfunktion für ZIP-Verarbeitung
+Func _Main_ProcessZIPFile($sZIPPath)
+    _SetStatus("Verarbeite ZIP-Datei...")
     
-    $g_bProcessing = True
-    Local $iItems = _GUICtrlListView_GetItemCount($g_idListview)
+    ; ZIP extrahieren
+    Local $sExtractPath = $g_sWorkingDir & "\" & _GetFileNameWithoutExt($sZIPPath)
+    If Not _ZIP_Extract($sZIPPath, $sExtractPath) Then
+        _ErrorHandler_HandleError($ERROR_TYPE_ZIP, "Fehler beim Entpacken", $ERROR_LEVEL_ERROR)
+        Return False
+    EndIf
     
-    For $i = 0 To $iItems - 1
-        Local $sFilePath = _GUICtrlListView_GetItemText($g_idListview, $i, 0)
-        _GUICtrlListView_SetItemText($g_idListview, $i, 1, "Verarbeite...")
-        GUICtrlSetData($idStatus, "Verarbeite: " & $sFilePath)
-        
-        ; ZIP extrahieren
-        Local $sExtractPath = _ZIP_Extract($sFilePath, $g_sWorkingDir)
-        If @error Then
-            _GUICtrlListView_SetItemText($g_idListview, $i, 1, "Fehler: ZIP")
-            ContinueLoop
-        EndIf
-        
-        ; SQLite-DBs suchen und analysieren
-        Local $aDBFiles = _FileListToArray($sExtractPath, "*.db", $FLTA_FILES)
-        If Not @error Then
-            For $j = 1 To $aDBFiles[0]
-                Local $sDBPath = $sExtractPath & "\" & $aDBFiles[$j]
-                GUICtrlSetData($idStatus, "Analysiere DB: " & $aDBFiles[$j])
-                _SQLiteViewer_Show($sDBPath)
-            Next
-        EndIf
-        
-        _GUICtrlListView_SetItemText($g_idListview, $i, 1, "Abgeschlossen")
-        _MemoryManager_Cleanup()
+    ; Suche nach SQLite Dateien
+    Local $aDBFiles = _FileListToArray($sExtractPath, "*.db", $FLTA_FILES)
+    If @error Then
+        _ErrorHandler_HandleError($ERROR_TYPE_FILE, "Keine Datenbankdateien gefunden", $ERROR_LEVEL_WARNING)
+        Return False
+    EndIf
+    
+    ; Erste DB-Datei öffnen
+    _Main_OpenDatabase($sExtractPath & "\" & $aDBFiles[1])
+    
+    _SetStatus("ZIP-Datei erfolgreich verarbeitet")
+    Return True
+EndFunc
+
+; Datenbank öffnen und anzeigen
+Func _Main_OpenDatabase($sDBPath)
+    _SetStatus("Öffne Datenbank...")
+    
+    ; DB Connection
+    Local $hDB = _SQLite_Open($sDBPath)
+    If @error Then
+        _ErrorHandler_HandleError($ERROR_TYPE_DB, "Fehler beim Öffnen der Datenbank", $ERROR_LEVEL_ERROR)
+        Return False
+    EndIf
+    
+    ; Tabellen auflisten
+    Local $aTables = _SQLite_GetTableNames($hDB)
+    If @error Or Not IsArray($aTables) Then
+        _ErrorHandler_HandleError($ERROR_TYPE_DB, "Keine Tabellen gefunden", $ERROR_LEVEL_WARNING)
+        Return False
+    EndIf
+    
+    ; Erste Tabelle anzeigen
+    _Main_DisplayTable($hDB, $aTables[0])
+    
+    _SetStatus("Datenbank geladen")
+    Return True
+EndFunc
+
+; Tabellendaten anzeigen
+Func _Main_DisplayTable($hDB, $sTable)
+    _SetStatus("Lade Tabellendaten...")
+    
+    ; Spalten abrufen
+    Local $aColumns = _SQLite_GetTableColumns($hDB, $sTable)
+    If @error Then Return False
+    
+    ; ListView vorbereiten
+    _GUICtrlListView_DeleteAllItems($g_hListView)
+    _GUICtrlListView_DeleteAllColumns($g_hListView)
+    
+    ; Spalten erstellen
+    For $i = 0 To UBound($aColumns) - 1
+        _GUICtrlListView_AddColumn($g_hListView, $aColumns[$i], 100)
     Next
     
-    $g_bProcessing = False
-EndFunc
-
-; Datei öffnen
-Func _HandleFileOpen()
-    Local $sFilePath = FileOpenDialog("ZIP-Datei öffnen", "", "ZIP (*.zip)")
-    If @error Then Return
+    ; Daten laden
+    Local $sQuery = "SELECT * FROM " & $sTable & " LIMIT 1000"
+    Local $aResult = _SQLite_GetTable2d($hDB, $sQuery)
+    If @error Then Return False
     
-    Local $sFileName = StringTrimLeft($sFilePath, StringInStr($sFilePath, "\", 0, -1))
-    _GUICtrlListView_AddItem($g_idListview, $sFileName)
-    _GUICtrlListView_SetItemText($g_idListview, _GUICtrlListView_GetItemCount($g_idListview) - 1, 1, "Bereit")
-    _GUICtrlListView_SetItemText($g_idListview, _GUICtrlListView_GetItemCount($g_idListview) - 1, 2, "0%")
-EndFunc
-
-; Arbeitsverzeichnis bereinigen
-Func _CleanupWorkDir()
-    Local $aFiles = _FileListToArray($g_sWorkingDir, "*.*", $FLTA_FILESFOLDERS)
-    If Not @error Then
-        For $i = 1 To $aFiles[0]
-            FileDelete($g_sWorkingDir & "\" & $aFiles[$i])
+    ; Daten einfügen
+    For $i = 1 To $aResult[0][0]
+        Local $aRow = StringSplit($aResult[$i][0], "|")
+        _GUICtrlListView_AddItem($g_hListView, $aRow[1])
+        For $j = 2 To $aRow[0]
+            _GUICtrlListView_AddSubItem($g_hListView, $i-1, $aRow[$j], $j-1)
         Next
-    EndIf
+    Next
+    
+    _SetStatus("Tabelle geladen: " & $sTable)
+    Return True
 EndFunc
 
-; Aufräumen beim Beenden
-Func _Cleanup()
-    _Log_Write("Anwendung wird beendet")
-    _MemoryManager_Cleanup()
-    _CleanupWorkDir()
-    DirRemove($g_sWorkingDir, 1)
+; Export nach Excel
+Func _Main_ExportToExcel()
+    _SetStatus("Exportiere nach Excel...")
+    
+    Local $sTemplate = @ScriptDir & "\templates\export.xlsx"
+    Local $sExportFile = @ScriptDir & "\export_" & @YEAR & @MON & @MDAY & "_" & @HOUR & @MIN & ".xlsx"
+    
+    ; Daten aus ListView holen
+    Local $aData = _GUICtrlListView_GetItemTextArray($g_hListView)
+    
+    ; Excel Export
+    If Not _Excel_Export($sTemplate, $sExportFile, $aData) Then
+        _ErrorHandler_HandleError($ERROR_TYPE_FILE, "Fehler beim Excel-Export", $ERROR_LEVEL_ERROR)
+        Return False
+    EndIf
+    
+    _SetStatus("Excel-Export abgeschlossen: " & $sExportFile)
+    Return True
+EndFunc
+
+; Status aktualisieren
+Func _SetStatus($sMessage)
+    GUICtrlSetData($g_hStatusLabel, $sMessage)
+    _Logging_Log($sMessage)
+EndFunc
+
+; Hilfsfunktion: Dateiname ohne Erweiterung
+Func _GetFileNameWithoutExt($sFilePath)
+    Local $aPathSplit = StringSplit($sFilePath, "\")
+    Local $sFileName = $aPathSplit[$aPathSplit[0]]
+    Return StringLeft($sFileName, StringInStr($sFileName, ".", 0, -1) - 1)
+EndFunc
+
+; Event Loop
+Func _Main_EventLoop()
+    While 1
+        Local $nMsg = GUIGetMsg()
+        Switch $nMsg
+            Case $GUI_EVENT_CLOSE
+                Exit
+                
+            Case $idFileOpen
+                Local $sFile = FileOpenDialog("ZIP-Datei öffnen", "", "ZIP (*.zip)")
+                If @error Then ContinueLoop
+                _Main_ProcessZIPFile($sFile)
+                
+            Case $idDBOpen
+                Local $sFile = FileOpenDialog("Datenbank öffnen", "", "SQLite DB (*.db)")
+                If @error Then ContinueLoop
+                _Main_OpenDatabase($sFile)
+                
+            Case $idExportExcel
+                _Main_ExportToExcel()
+                
+            Case $idExportCSV
+                ; TODO: CSV Export implementieren
+                
+            Case $idRefresh
+                ; TODO: Daten neu laden
+                
+            Case $idFilter
+                ; TODO: Filtermaske anzeigen
+                
+            Case $idClear
+                _GUICtrlListView_DeleteAllItems($g_hListView)
+                _SetStatus("Ansicht zurückgesetzt")
+        EndSwitch
+        
+        ; Memory Management
+        _MemoryManager_Cleanup()
+    WEnd
 EndFunc
 
 ; Programm starten
-_Main()
+_ErrorHandler_Init()
+_Logging_Init($g_sLogFile)
+_MemoryManager_Init()
+
+If Not FileExists($g_sWorkingDir) Then DirCreate($g_sWorkingDir)
+
+_Main_CreateGUI()
+_Main_EventLoop()
