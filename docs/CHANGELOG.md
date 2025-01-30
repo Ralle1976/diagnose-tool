@@ -10,14 +10,25 @@
   - Dynamische Menüerstellung
   - Event-Handler für Benutzerinteraktionen
   - Statusleisten-Updates
+- Sicherer Passwort-Manager für ZIP-Dateien
+  - AES-256 Verschlüsselung
+  - Automatische Passwortabfrage
+  - Sichere Speicherung
+- Layout-Optimierungen
+  - Automatische Spaltenbreitenanpassung
+  - Dynamische Größenanpassung
+  - Alternierende Zeilenfarben
+  - Sortierungspfeile in Spaltenköpfen
 
 ### Changed
 - Hauptanwendung überarbeitet
   - Integration des Kontextmenü-Systems
   - Verbesserte Event-Verarbeitung
   - Moderneres Layout
+- ZIP-Handler erweitert
+  - Integration des Passwort-Managers
+  - Verbesserte Fehlerbehandlung
 
 ### Upcoming
-- Tabellen-Layout Optimierung
-- Erweiterte Statusanzeigen
 - Drag & Drop Verbesserungen
+- Erweiterte Statusanzeigen
