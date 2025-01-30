@@ -1,115 +1,107 @@
 #include-once
-#include <Inet.au3>
-#include <String.au3>
+#include <FileConstants.au3>
+#include <ProgressConstants.au3>
+#include "password_manager.au3"
+#include "error_handler.au3"
 
-Global $g_sevenZipPath = @ScriptDir & "\7z.exe"
-Global $g_sevenZipDownloadPage = "https://7-zip.org/download.html"
+Global Const $7ZIP_PATH = @ScriptDir & "\tools\7z.exe"
 
-Func GetLatest7ZipURL()
-    _LogDebug("Suche nach aktueller 7-Zip Version")
-    
-    Local $html = InetRead($g_sevenZipDownloadPage)
-    If @error Then
-        _LogError("7-Zip Downloadseite nicht erreichbar", "Error: " & @error)
-        Return ""
+; Prüft ob 7-Zip verfügbar ist und lädt es ggf. herunter
+Func InitializeZipHandler()
+    If Not FileExists($7ZIP_PATH) Then
+        _LogMessage("7-Zip wird heruntergeladen...")
+        ; TODO: Download-Logik implementieren
+        Return False
     EndIf
-    
-    Local $pattern = "href=\"(https://7-zip.org/a/7z(\\d+)-(x64|x86)\\.exe)\""
-    Local $matches = StringRegExp($html, $pattern, 3)
-    If @error Or UBound($matches) = 0 Then
-        _LogError("Keine passende 7-Zip Version gefunden")
-        Return ""
-    EndIf
-    
-    Local $url = ""
-    If @OSArch = "X64" Then
-        For $i = 0 To UBound($matches) - 1
-            If StringInStr($matches[$i], "x64") Then 
-                $url = $matches[$i]
-                ExitLoop
-            EndIf
-        Next
-    Else
-        For $i = 0 To UBound($matches) - 1
-            If StringInStr($matches[$i], "x86") Then 
-                $url = $matches[$i]
-                ExitLoop
-            EndIf
-        Next
-    EndIf
-    
-    If $url <> "" Then
-        _LogInfo("7-Zip Download URL gefunden", "URL: " & $url)
-    EndIf
-    
-    Return $url
-EndFunc
-
-Func CheckAndDownload7Zip()
-    _LogInfo("Überprüfe 7-Zip Installation")
-    
-    If Not FileExists($g_sevenZipPath) Then
-        Local $url = GetLatest7ZipURL()
-        If $url = "" Then
-            _LogError("7-Zip Download fehlgeschlagen", "Konnte keine Download-URL ermitteln")
-            MsgBox(16, "Fehler", "Konnte die aktuelle 7-Zip-Version nicht ermitteln!")
-            Return False
-        EndIf
-        
-        _LogInfo("Starte 7-Zip Download", "URL: " & $url)
-        InetGet($url, $g_sevenZipPath, 1, 1)
-        
-        Local $downloadSuccess = False
-        Local $startTime = TimerInit()
-        Do
-            Sleep(500)
-            If TimerDiff($startTime) > 60000 Then
-                _LogError("7-Zip Download Timeout")
-                ExitLoop
-            EndIf
-        Until InetGetInfo($g_sevenZipPath, 2) = 1
-        
-        If FileExists($g_sevenZipPath) Then
-            _LogInfo("7-Zip erfolgreich heruntergeladen")
-            MsgBox(64, "7-Zip Download", "7-Zip wurde erfolgreich heruntergeladen!")
-            Return True
-        Else
-            _LogError("7-Zip konnte nicht heruntergeladen werden")
-            MsgBox(16, "Fehler", "7-Zip konnte nicht heruntergeladen werden!")
-            Return False
-        EndIf
-    EndIf
-    
     Return True
 EndFunc
 
-Func _ExtractZip($zipFile, $destFolder, $password = "")
-    _LogInfo("Starte Entpackvorgang", "Datei: " & $zipFile & @CRLF & "Ziel: " & $destFolder)
-    
-    If Not FileExists($zipFile) Then
-        _LogError("ZIP-Datei nicht gefunden", "Pfad: " & $zipFile)
+; Extrahiert eine ZIP-Datei
+Func ExtractZipFile($sZipFile, $sDestPath)
+    If Not FileExists($sZipFile) Then
+        _LogError("ZIP-Datei nicht gefunden: " & $sZipFile)
         Return False
     EndIf
     
-    If Not FileExists($destFolder) Then
-        DirCreate($destFolder)
-        _LogDebug("Zielverzeichnis erstellt", "Pfad: " & $destFolder)
+    ; Prüfe ob ein Passwort gespeichert ist
+    Local $sPassword = GetPassword($sZipFile)
+    Local $sCmd
+    
+    If $sPassword = "" Then
+        ; Kein Passwort gefunden - frage nach
+        $sPassword = InputBox("Passwort erforderlich", "Bitte geben Sie das Passwort für " & $sZipFile & " ein:", "", "*")
+        If @error Then Return False
+        
+        ; Frage ob Passwort gespeichert werden soll
+        Local $iSave = MsgBox($MB_YESNO, "Passwort speichern", "Soll das Passwort für zukünftige Verwendung gespeichert werden?")
+        If $iSave = $IDYES Then
+            SavePassword($sZipFile, $sPassword)
+        EndIf
     EndIf
     
-    Local $command = '"' & $g_sevenZipPath & '" x'
-    If $password <> "" Then
-        $command &= ' -p' & $password
+    ; Erstelle Extraktionsbefehl
+    If $sPassword <> "" Then
+        $sCmd = '"' & $7ZIP_PATH & '" x "' & $sZipFile & '" -o"' & $sDestPath & '" -p"' & $sPassword & '" -y'
+    Else
+        $sCmd = '"' & $7ZIP_PATH & '" x "' & $sZipFile & '" -o"' & $sDestPath & '" -y'
     EndIf
-    $command &= ' -o"' & $destFolder & '" "' & $zipFile & '" -y'
     
-    _LogDebug("Ausführe 7-Zip Kommando", "Kommando: " & $command)
-    
-    Local $pid = RunWait($command, "", @SW_HIDE)
-    If @error Or $pid = -1 Then
-        _LogError("Entpacken fehlgeschlagen", "Fehlercode: " & @error & @CRLF & "Exit Code: " & $pid)
+    ; Führe Extraktion aus
+    Local $iPID = Run($sCmd, "", @SW_HIDE, $STDOUT_CHILD)
+    If @error Then
+        _LogError("Fehler beim Ausführen von 7-Zip")
         Return False
     EndIf
     
-    _LogInfo("Entpackvorgang abgeschlossen", "Datei: " & $zipFile)
+    ; Warte auf Abschluss
+    Local $sOutput = ""
+    While 1
+        $sOutput &= StdoutRead($iPID)
+        If @error Then ExitLoop
+        
+        ; TODO: Fortschrittsanzeige aktualisieren
+    WEnd
+    
+    ; Prüfe Ergebnis
+    Local $iExitCode = ProcessWaitClose($iPID)
+    If $iExitCode <> 0 Then
+        _LogError("Fehler beim Entpacken: " & $sOutput)
+        Return False
+    EndIf
+    
+    _LogMessage("ZIP-Datei erfolgreich entpackt: " & $sZipFile)
+    Return True
+EndFunc
+
+; Erstellt eine ZIP-Datei
+Func CreateZipFile($sZipFile, $sSourcePath, $sPassword = "")
+    If $sPassword <> "" Then
+        ; Speichere Passwort wenn angegeben
+        SavePassword($sZipFile, $sPassword)
+        $sCmd = '"' & $7ZIP_PATH & '" a "' & $sZipFile & '" "' & $sSourcePath & '" -p"' & $sPassword & '" -y'
+    Else
+        $sCmd = '"' & $7ZIP_PATH & '" a "' & $sZipFile & '" "' & $sSourcePath & '" -y'
+    EndIf
+    
+    Local $iPID = Run($sCmd, "", @SW_HIDE, $STDOUT_CHILD)
+    If @error Then
+        _LogError("Fehler beim Erstellen der ZIP-Datei")
+        Return False
+    EndIf
+    
+    ; Warte auf Abschluss
+    Local $sOutput = ""
+    While 1
+        $sOutput &= StdoutRead($iPID)
+        If @error Then ExitLoop
+    WEnd
+    
+    Local $iExitCode = ProcessWaitClose($iPID)
+    If $iExitCode <> 0 Then
+        _LogError("Fehler beim Erstellen der ZIP-Datei: " & $sOutput)
+        Return False
+    EndIf
+    
+    _LogMessage("ZIP-Datei erfolgreich erstellt: " & $sZipFile)
     Return True
 EndFunc
