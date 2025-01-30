@@ -6,9 +6,10 @@
 #include "lib/error_handler.au3"
 #include "lib/listview_layout.au3"
 #include "lib/drag_drop_handler.au3"
+#include "lib/status_handler.au3"
 
 ; Globale Variablen
-Global $g_hGUI, $g_hListView, $g_hStatusBar
+Global $g_hGUI, $g_hListView
 Global $g_hContextMenu
 
 Func Main()
@@ -31,9 +32,9 @@ Func Main()
     ; Kontextmenü für ListView
     $g_hContextMenu = CreateListViewContextMenu($g_hListView)
     
-    ; Statusleiste erstellen
-    $g_hStatusBar = _GUICtrlStatusBar_Create($g_hGUI)
-    _GUICtrlStatusBar_SetText($g_hStatusBar, "Bereit - Dateien hierher ziehen")
+    ; Erweiterte Statusleiste initialisieren
+    InitStatusBar($g_hGUI, 800)
+    ShowTempStatus("Anwendung gestartet", 3000)
     
     ; Event-Handler registrieren
     GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY_Handler")
@@ -51,13 +52,35 @@ Func Main()
                 ExitLoop
             Case $GUI_EVENT_DROPPED
                 _LogMessage("Dateien wurden gedroppt")
+                UpdateMainStatus("Verarbeite Dateien...")
+                UpdateItemCount(_GUICtrlListView_GetItemCount($g_hListView))
         EndSwitch
     WEnd
     
     ; Aufräumen
     _MemoryManager_Cleanup()
     _PasswordManager_Cleanup()
+    _StatusHandler_Cleanup()
     GUIDelete($g_hGUI)
+EndFunc
+
+; Event-Handler für Fenstergrößenänderung
+Func GUI_WM_SIZE_Handler($hWnd, $iMsg, $wParam, $lParam)
+    #forceref $iMsg, $wParam
+    If $hWnd = $g_hGUI Then
+        ; Hole neue Fenstermaße
+        Local $aPos = WinGetPos($g_hGUI)
+        If Not @error Then
+            ; Aktualisiere ListView und Statusleiste
+            ResizeListView($g_hListView, $g_hGUI)
+            _GUICtrlStatusBar_SetParts($g_hStatusBar, _
+                Int($aPos[2] * 0.4), _
+                Int($aPos[2] * 0.25), _
+                Int($aPos[2] * 0.2), _
+                -1)
+        EndIf
+        Return $GUI_RUNDEFMSG
+    EndIf
 EndFunc
 
 ; Event-Handler für Drag & Drop
@@ -65,17 +88,18 @@ Func GUI_WM_DROPFILES_Handler($hWnd, $iMsg, $wParam, $lParam)
     #forceref $iMsg, $lParam
     
     If $hWnd = $g_hGUI Then
-        ; Setze Status
-        _GUICtrlStatusBar_SetText($g_hStatusBar, "Verarbeite Dateien...")
+        UpdateMainStatus("Verarbeite Dateien...")
+        ShowStatusProgress(0)
         
         ; Verarbeite gedropte Dateien
         Local $bSuccess = HandleFileDrop($hWnd, $wParam)
         
         ; Aktualisiere Status
         If $bSuccess Then
-            _GUICtrlStatusBar_SetText($g_hStatusBar, "Dateien erfolgreich verarbeitet")
+            ShowTempStatus("Dateien erfolgreich verarbeitet", 3000)
+            UpdateItemCount(_GUICtrlListView_GetItemCount($g_hListView))
         Else
-            _GUICtrlStatusBar_SetText($g_hStatusBar, "Fehler beim Verarbeiten der Dateien")
+            ShowTempStatus("Fehler beim Verarbeiten der Dateien", 3000)
         EndIf
         
         Return True
@@ -84,4 +108,4 @@ Func GUI_WM_DROPFILES_Handler($hWnd, $iMsg, $wParam, $lParam)
     Return $GUI_RUNDEFMSG
 EndFunc
 
-[... Rest der Datei bleibt gleich ...]
+; Restliche Funktionen bleiben unverändert...
