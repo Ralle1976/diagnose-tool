@@ -4,6 +4,7 @@
 #include "lib/sqlite_handler.au3"
 #include "lib/memory_manager.au3"
 #include "lib/error_handler.au3"
+#include "lib/listview_layout.au3"
 
 ; Globale Variablen
 Global $g_hGUI, $g_hListView, $g_hStatusBar
@@ -19,6 +20,10 @@ Func Main()
     ; ListView erstellen
     $g_hListView = GUICtrlCreateListView("Spalte 1|Spalte 2|Spalte 3", 10, 10, 780, 540)
     
+    ; Layout-Optimierungen anwenden
+    EnableAlternatingRows($g_hListView)
+    OptimizeColumnWidths($g_hListView)
+    
     ; Kontextmenü für ListView
     $g_hContextMenu = CreateListViewContextMenu($g_hListView)
     
@@ -29,6 +34,7 @@ Func Main()
     ; Event-Handler registrieren
     GUIRegisterMsg($WM_NOTIFY, "WM_NOTIFY_Handler")
     GUIRegisterMsg($WM_COMMAND, "HandleContextMenuEvent")
+    GUIRegisterMsg($WM_SIZE, "GUI_WM_SIZE_Handler")
     
     ; GUI anzeigen
     GUISetState(@SW_SHOW, $g_hGUI)
@@ -43,6 +49,7 @@ Func Main()
     
     ; Aufräumen
     _MemoryManager_Cleanup()
+    _PasswordManager_Cleanup()
     GUIDelete($g_hGUI)
 EndFunc
 
@@ -55,9 +62,19 @@ Func CreateMainMenu()
     Local $hView = GUICtrlCreateMenu("&Ansicht")
     GUICtrlCreateMenuItem("Aktualisieren", $hView)
     GUICtrlCreateMenuItem("Filter...", $hView)
+    GUICtrlCreateMenuItem("Spaltenbreite optimieren", $hView)
     
     Local $hHelp = GUICtrlCreateMenu("&Hilfe")
     GUICtrlCreateMenuItem("Über...", $hHelp)
+EndFunc
+
+; Event-Handler für Fenstergrößenänderung
+Func GUI_WM_SIZE_Handler($hWnd, $iMsg, $wParam, $lParam)
+    #forceref $iMsg, $wParam
+    If $hWnd = $g_hGUI Then
+        ResizeListView($g_hListView, $g_hGUI)
+        Return $GUI_RUNDEFMSG
+    EndIf
 EndFunc
 
 Func WM_NOTIFY_Handler($hWnd, $iMsg, $wParam, $lParam)
@@ -73,6 +90,16 @@ Func WM_NOTIFY_Handler($hWnd, $iMsg, $wParam, $lParam)
                     ; Kontextmenü anzeigen
                     Local $aPos = MouseGetPos()
                     _TrackPopupMenu($g_hContextMenu, $aPos[0], $aPos[1], $hWnd)
+                    Return True
+                    
+                Case $LVN_COLUMNCLICK
+                    ; Spalte wurde für Sortierung geklickt
+                    Local $tNMLISTVIEW = DllStructCreate($tagNMLISTVIEW, $lParam)
+                    Local $iColumn = DllStructGetData($tNMLISTVIEW, "SubItem")
+                    ; Toggle Sortierrichtung
+                    Static Local $bAscending = True
+                    $bAscending = Not $bAscending
+                    SetColumnSortArrow($g_hListView, $iColumn, $bAscending)
                     Return True
             EndSwitch
     EndSwitch
