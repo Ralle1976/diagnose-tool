@@ -6,14 +6,18 @@
 #include "lib/sqlite_handler.au3"
 #include "lib/zip_handler.au3"
 #include "lib/excel_handler.au3"
+#include "lib/csv_handler.au3"
 #include "lib/memory_manager.au3"
 #include "lib/logging.au3"
+#include "lib/advanced_filter_gui.au3"
+#include "lib/advanced_filter_core.au3"
 
 ; Globale Variablen
-Global $g_hGUI, $g_hListView
-Global $g_hStatusLabel
+Global $g_hGUI, $g_hListView, $g_hStatusLabel
 Global $g_sWorkingDir = @ScriptDir & "\temp"
 Global $g_sLogFile = @ScriptDir & "\logs\app.log"
+Global $g_hCurrentDB = Null ; Aktuelle Datenbankverbindung
+Global $g_sCurrentTable = "" ; Aktuelle Tabelle
 
 ; GUI Erstellen
 Func _Main_CreateGUI()
@@ -55,7 +59,6 @@ Func _Main_ProcessZIPFile($sZIPPath)
     ; ZIP extrahieren
     Local $sExtractPath = $g_sWorkingDir & "\" & _GetFileNameWithoutExt($sZIPPath)
     If Not _ZIP_Extract($sZIPPath, $sExtractPath) Then
-        _ErrorHandler_HandleError($ERROR_TYPE_ZIP, "Fehler beim Entpacken", $ERROR_LEVEL_ERROR)
         Return False
     EndIf
     
@@ -67,43 +70,45 @@ Func _Main_ProcessZIPFile($sZIPPath)
     EndIf
     
     ; Erste DB-Datei öffnen
-    _Main_OpenDatabase($sExtractPath & "\" & $aDBFiles[1])
-    
-    _SetStatus("ZIP-Datei erfolgreich verarbeitet")
-    Return True
+    Return _Main_OpenDatabase($sExtractPath & "\" & $aDBFiles[1])
 EndFunc
 
 ; Datenbank öffnen und anzeigen
 Func _Main_OpenDatabase($sDBPath)
     _SetStatus("Öffne Datenbank...")
     
-    ; DB Connection
-    Local $hDB = _SQLite_Open($sDBPath)
+    ; Alte Verbindung schließen
+    If $g_hCurrentDB Then
+        _SQLite_Close($g_hCurrentDB)
+    EndIf
+    
+    ; Neue DB Connection
+    $g_hCurrentDB = _SQLite_Open($sDBPath)
     If @error Then
         _ErrorHandler_HandleError($ERROR_TYPE_DB, "Fehler beim Öffnen der Datenbank", $ERROR_LEVEL_ERROR)
         Return False
     EndIf
     
     ; Tabellen auflisten
-    Local $aTables = _SQLite_GetTableNames($hDB)
+    Local $aTables = _SQLite_GetTableNames($g_hCurrentDB)
     If @error Or Not IsArray($aTables) Then
         _ErrorHandler_HandleError($ERROR_TYPE_DB, "Keine Tabellen gefunden", $ERROR_LEVEL_WARNING)
         Return False
     EndIf
     
     ; Erste Tabelle anzeigen
-    _Main_DisplayTable($hDB, $aTables[0])
-    
-    _SetStatus("Datenbank geladen")
-    Return True
+    Return _Main_DisplayTable($aTables[0])
 EndFunc
 
 ; Tabellendaten anzeigen
-Func _Main_DisplayTable($hDB, $sTable)
+Func _Main_DisplayTable($sTable)
+    If Not $g_hCurrentDB Then Return False
+    
     _SetStatus("Lade Tabellendaten...")
+    $g_sCurrentTable = $sTable
     
     ; Spalten abrufen
-    Local $aColumns = _SQLite_GetTableColumns($hDB, $sTable)
+    Local $aColumns = _SQLite_GetTableColumns($g_hCurrentDB, $sTable)
     If @error Then Return False
     
     ; ListView vorbereiten
@@ -117,7 +122,7 @@ Func _Main_DisplayTable($hDB, $sTable)
     
     ; Daten laden
     Local $sQuery = "SELECT * FROM " & $sTable & " LIMIT 1000"
-    Local $aResult = _SQLite_GetTable2d($hDB, $sQuery)
+    Local $aResult = _SQLite_GetTable2d($g_hCurrentDB, $sQuery)
     If @error Then Return False
     
     ; Daten einfügen
@@ -133,8 +138,31 @@ Func _Main_DisplayTable($hDB, $sTable)
     Return True
 EndFunc
 
+; Filter-Dialog anzeigen
+Func _Main_ShowFilter()
+    If Not $g_hCurrentDB Or $g_sCurrentTable = "" Then
+        _ErrorHandler_HandleError($ERROR_TYPE_DB, "Keine Tabelle geöffnet", $ERROR_LEVEL_WARNING)
+        Return False
+    EndIf
+    
+    ; Spaltennamen holen
+    Local $aColumns = _SQLite_GetTableColumns($g_hCurrentDB, $g_sCurrentTable)
+    If @error Then Return False
+    
+    ; Filter-Dialog anzeigen
+    If _Filter_ShowDialog($aColumns) Then
+        ; Filter anwenden
+        _Filter_ApplyToListView($g_hListView)
+    EndIf
+EndFunc
+
 ; Export nach Excel
 Func _Main_ExportToExcel()
+    If Not $g_hCurrentDB Then
+        _ErrorHandler_HandleError($ERROR_TYPE_DB, "Keine Daten zum Exportieren", $ERROR_LEVEL_WARNING)
+        Return False
+    EndIf
+    
     _SetStatus("Exportiere nach Excel...")
     
     Local $sTemplate = @ScriptDir & "\templates\export.xlsx"
@@ -145,11 +173,33 @@ Func _Main_ExportToExcel()
     
     ; Excel Export
     If Not _Excel_Export($sTemplate, $sExportFile, $aData) Then
-        _ErrorHandler_HandleError($ERROR_TYPE_FILE, "Fehler beim Excel-Export", $ERROR_LEVEL_ERROR)
         Return False
     EndIf
     
     _SetStatus("Excel-Export abgeschlossen: " & $sExportFile)
+    Return True
+EndFunc
+
+; Export nach CSV
+Func _Main_ExportToCSV()
+    If Not $g_hCurrentDB Then
+        _ErrorHandler_HandleError($ERROR_TYPE_DB, "Keine Daten zum Exportieren", $ERROR_LEVEL_WARNING)
+        Return False
+    EndIf
+    
+    _SetStatus("Exportiere nach CSV...")
+    
+    Local $sExportFile = @ScriptDir & "\export_" & @YEAR & @MON & @MDAY & "_" & @HOUR & @MIN & ".csv"
+    
+    ; Daten aus ListView holen
+    Local $aData = _GUICtrlListView_GetItemTextArray($g_hListView)
+    
+    ; CSV Export
+    If Not _CSV_Export($sExportFile, $aData) Then
+        Return False
+    EndIf
+    
+    _SetStatus("CSV-Export abgeschlossen: " & $sExportFile)
     Return True
 EndFunc
 
@@ -172,29 +222,27 @@ Func _Main_EventLoop()
         Local $nMsg = GUIGetMsg()
         Switch $nMsg
             Case $GUI_EVENT_CLOSE
-                Exit
+                ExitLoop
                 
             Case $idFileOpen
                 Local $sFile = FileOpenDialog("ZIP-Datei öffnen", "", "ZIP (*.zip)")
-                If @error Then ContinueLoop
-                _Main_ProcessZIPFile($sFile)
+                If Not @error Then _Main_ProcessZIPFile($sFile)
                 
             Case $idDBOpen
                 Local $sFile = FileOpenDialog("Datenbank öffnen", "", "SQLite DB (*.db)")
-                If @error Then ContinueLoop
-                _Main_OpenDatabase($sFile)
+                If Not @error Then _Main_OpenDatabase($sFile)
                 
             Case $idExportExcel
                 _Main_ExportToExcel()
                 
             Case $idExportCSV
-                ; TODO: CSV Export implementieren
-                
-            Case $idRefresh
-                ; TODO: Daten neu laden
+                _Main_ExportToCSV()
                 
             Case $idFilter
-                ; TODO: Filtermaske anzeigen
+                _Main_ShowFilter()
+                
+            Case $idRefresh
+                If $g_sCurrentTable <> "" Then _Main_DisplayTable($g_sCurrentTable)
                 
             Case $idClear
                 _GUICtrlListView_DeleteAllItems($g_hListView)
@@ -204,6 +252,10 @@ Func _Main_EventLoop()
         ; Memory Management
         _MemoryManager_Cleanup()
     WEnd
+    
+    ; Aufräumen
+    If $g_hCurrentDB Then _SQLite_Close($g_hCurrentDB)
+    _MemoryManager_Cleanup(True)
 EndFunc
 
 ; Programm starten
