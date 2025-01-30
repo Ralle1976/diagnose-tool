@@ -1,7 +1,10 @@
 # Übergabedokumentation für Diagnose-Tool
 
-## Aktueller Stand (30.01.2025)
+## GitHub-Repository
 Repository: https://github.com/Ralle1976/diagnose-tool
+Zugriff via GitHub API möglich - siehe Beispiele unten.
+
+## Aktueller Stand (30.01.2025)
 
 ### Implementierte Module
 1. Main Application (src/main.au3) ✓
@@ -9,11 +12,13 @@ Repository: https://github.com/Ralle1976/diagnose-tool
    - Dateiverarbeitung
    - Statusanzeigen
    - Ressourcenmanagement
+   - Filter-Integration
 
 2. Logging-System (src/lib/logging.au3) ✓
    - Rotationsfähig
    - Verschiedene Log-Level
    - Strukturierte Ausgabe
+   - Error-Handler Integration
 
 3. ZIP-Handler (src/lib/zip_handler.au3) ✓
    - 7-Zip Integration
@@ -22,7 +27,7 @@ Repository: https://github.com/Ralle1976/diagnose-tool
 
 4. SQLite-Handler (src/lib/sqlite_handler.au3) ✓
    - Datenbankzugriff
-   - Tabellenmanagement
+   - Tabellenmanagement 
    - Fehlerbehandlung
 
 5. SQLite-Viewer (src/lib/sqlite_viewer.au3) ✓
@@ -37,9 +42,10 @@ Repository: https://github.com/Ralle1976/diagnose-tool
    - Automatische Typenerkennung
 
 7. Advanced-Filter (src/lib/advanced_filter.au3) ✓
-   - Komplexe Filterbedingungen
+   - Komplexe Filterbedingungen 
    - Filter-Vorlagen System
    - Multi-Spalten Unterstützung
+   - GUI & Core Komponenten
 
 8. Memory Manager (src/lib/memory_manager.au3) ✓
    - Proaktive Speicherüberwachung
@@ -51,20 +57,53 @@ Repository: https://github.com/Ralle1976/diagnose-tool
    - Formatierungsoptionen
    - Batch-Export Support
 
+10. CSV-Handler (src/lib/csv_handler.au3) ✓
+    - Import/Export Funktionen
+    - Unicode Support
+    - Fehlerbehandlung
+
+11. Error-Handler (src/lib/error_handler.au3) ✓
+    - Zentrales Fehler-Logging
+    - Benutzerfreundliche Meldungen
+    - Verschiedene Error-Level
+
+### GitHub API Beispiele
+
+1. Repository-Informationen abrufen:
+```javascript
+// Mit MCP GitHub API
+await get_file_contents({
+    owner: "Ralle1976",
+    repo: "diagnose-tool",
+    path: "HANDOVER.md"
+});
+```
+
+2. Dateien aktualisieren:
+```javascript
+// Mit MCP GitHub API
+await create_or_update_file({
+    owner: "Ralle1976",
+    repo: "diagnose-tool",
+    path: "src/main.au3",
+    message: "Update main.au3",
+    content: "neuer Inhalt",
+    branch: "main"
+});
+```
+
 ### Nächste Schritte
-1. Fehlerbehandlung implementieren:
-   - Validierung aller Benutzereingaben
-   - Erweitertes Error-Logging
-   - Benutzerfreundliche Fehlermeldungen
-   - Try-Catch ähnliche Strukturen
+1. GUI-Verbesserungen:
+   - Kontextmenüs für ListView
+   - Erweiterte Statusanzeigen
+   - Drag & Drop Optimierung
 
-2. Testing durchführen:
-   - Unit-Tests erstellen
-   - Performance-Tests
-   - Speicheranalyse
-   - Fehlerszenarien testen
+2. Performance-Optimierung:
+   - Lazy Loading für große Datensätze
+   - SQL-Query Optimierung
+   - Cache-System einführen
 
-3. Dokumentation vervollständigen:
+3. Dokumentation:
    - Benutzerhandbuch erstellen
    - Code-Dokumentation ergänzen
    - Beispiele hinzufügen
@@ -77,6 +116,8 @@ Repository: https://github.com/Ralle1976/diagnose-tool
 
 2. Repository-Struktur:
    - src/: Quellcode
+     - lib/: Modulbibliotheken
+     - main.au3: Hauptanwendung
    - docs/: Dokumentation
    - templates/: Excel-Vorlagen
    - tests/: Testfälle (zu erstellen)
@@ -100,6 +141,9 @@ Repository: https://github.com/Ralle1976/diagnose-tool
    - templates/: Excel-Vorlagen
 
 ### Für den nächsten Chat
-1. Fehlerbehandlung implementieren
-2. Unit-Tests entwickeln
-3. Dokumentation vervollständigen
+1. GitHub API verwenden für:
+   - Code-Zugriff
+   - Dokumentations-Updates
+   - Issue-Tracking
+2. Alle Informationen in .md Files beachten
+3. Implementierungsdetails in Source-Code prüfen
