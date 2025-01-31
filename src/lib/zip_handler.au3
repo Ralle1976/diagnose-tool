@@ -8,7 +8,6 @@
 #include "logging.au3"
 
 Global $g_sevenZipPath = @ScriptDir & "\7zr.exe"
-Global Const $g_sSevenZipBaseUrl = "https://www.7-zip.org/"
 
 ; Download und Installation von 7-Zip
 Func CheckAndDownload7Zip()
@@ -20,15 +19,27 @@ Func CheckAndDownload7Zip()
         Return True
     EndIf
     
-    _LogInfo("7-Zip nicht gefunden, starte Download der Console Version")
+    _LogInfo("7-Zip nicht gefunden, ermittle Download-URL")
     
-    ; Download der standalone Console Version
-    Local $sURL = $g_sSevenZipBaseUrl & "a/7zr.exe"
+    ; Download-Seite laden
+    Local $sHTML = InetGet("https://www.7-zip.org/download.html", "", $INET_FORCERELOAD)
+    Local $sContent = BinaryToString(InetRead("https://www.7-zip.org/download.html"))
     
-    _LogInfo("Starte Download von: " & $sURL)
-    _LogInfo("Nach: " & $g_sevenZipPath)
+    ; Nach standalone Console Version suchen
+    Local $sPattern = '(?i)<td[^>]*>\s*<a[^>]*href="([^"]*7zr\.exe)"'
+    Local $aResult = StringRegExp($sContent, $sPattern, 1)
+    If @error Then
+        _LogError("Konnte Download-Link nicht finden")
+        Return False
+    EndIf
     
-    ; Download mit InetGet und Fortschrittsüberwachung
+    ; Download-URL zusammenbauen
+    Local $sURL = "https://www.7-zip.org/" & $aResult[0]
+    _LogInfo("Download-URL gefunden: " & $sURL)
+    
+    ; Download starten
+    _LogInfo("Starte Download nach: " & $g_sevenZipPath)
+    
     Local $hDownload = InetGet($sURL, $g_sevenZipPath, $INET_FORCERELOAD)
     
     ; Download-Fortschritt überwachen
