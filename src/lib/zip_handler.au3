@@ -8,6 +8,7 @@
 #include "logging.au3"
 
 Global $g_sevenZipPath = @ScriptDir & "\7zr.exe"
+Global Const $g_sSevenZipBaseUrl = "https://www.7-zip.org/"
 
 ; Download und Installation von 7-Zip
 Func CheckAndDownload7Zip()
@@ -21,13 +22,13 @@ Func CheckAndDownload7Zip()
     
     _LogInfo("7-Zip nicht gefunden, starte Download der Console Version")
     
-    ; Download der Console Version
-    Local $sURL = "https://7-zip.org/a/7zr.exe"
+    ; Download der standalone Console Version
+    Local $sURL = $g_sSevenZipBaseUrl & "a/7zr.exe"
     
     _LogInfo("Starte Download von: " & $sURL)
     _LogInfo("Nach: " & $g_sevenZipPath)
     
-    ; Download direkt in das Zielverzeichnis
+    ; Download mit InetGet und Fortschrittsüberwachung
     Local $hDownload = InetGet($sURL, $g_sevenZipPath, $INET_FORCERELOAD)
     
     ; Download-Fortschritt überwachen
@@ -49,13 +50,14 @@ Func CheckAndDownload7Zip()
     EndIf
     
     Local $iFileSize = FileGetSize($g_sevenZipPath)
-    If $iFileSize < 10000 Then ; Mindestgröße prüfen
+    _LogInfo("Heruntergeladene Dateigröße: " & $iFileSize & " bytes")
+    
+    If $iFileSize < 100000 Then ; Mindestgröße prüfen
         _LogError("Download fehlgeschlagen - Datei zu klein: " & $iFileSize & " bytes")
-        FileDelete($g_sevenZipPath)
         Return False
     EndIf
     
-    _LogInfo("7-Zip Console Version erfolgreich installiert: " & $g_sevenZipPath)
+    _LogInfo("7-Zip Console Version erfolgreich heruntergeladen")
     Return True
 EndFunc
 
