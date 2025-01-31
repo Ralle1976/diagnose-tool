@@ -9,6 +9,63 @@
 
 Global $g_sevenZipPath = @ScriptDir & "\7z.exe"
 
+; Download URL von 7-Zip Webseite ermitteln (Methode 1 mit InetGet)
+Func _Get7ZipDownloadUrl_INet($sType = "7zr.exe")
+    Local $sBaseUrl = "https://7-zip.org/"
+    Local $bData = InetRead($sBaseUrl & "download.html")
+    If @error Then
+        _LogError("Fehler beim Download der Webseite", "Error: " & @error)
+        Return ""
+    EndIf
+    
+    Local $sHtml = BinaryToString($bData, 4) ; 4 = UTF-8
+    _LogInfo("HTML geladen, Länge: " & StringLen($sHtml))
+    
+    ; Suche nach dem ersten Vorkommen des Download-Links
+    Local $sPattern = '(?i)href="(a/' & $sType & ')"\'  
+    Local $aMatch = StringRegExp($sHtml, $sPattern, 1)
+    
+    If @error Then
+        _LogError("Download-Link nicht gefunden", "Pattern: " & $sPattern)
+        Return ""
+    EndIf
+    
+    Local $sUrl = $sBaseUrl & $aMatch[0]
+    _LogInfo("Download URL gefunden: " & $sUrl)
+    Return $sUrl
+EndFunc
+
+; Download URL von 7-Zip Webseite ermitteln (Methode 2 mit WinHTTP)
+Func _Get7ZipDownloadUrl_HTTP($sType = "7zr.exe")
+    Local $sBaseUrl = "https://7-zip.org/"
+    Local $oHTTP = ObjCreate("WinHttp.WinHttpRequest.5.1")
+    
+    _LogInfo("Lade Webseite: " & $sBaseUrl & "download.html")
+    
+    $oHTTP.Open("GET", $sBaseUrl & "download.html", False)
+    $oHTTP.Send()
+    
+    If $oHTTP.Status <> 200 Then
+        _LogError("HTTP Fehler: " & $oHTTP.Status)
+        Return ""
+    EndIf
+    
+    Local $sHtml = $oHTTP.ResponseText
+    _LogInfo("HTML geladen, Länge: " & StringLen($sHtml))
+    
+    Local $sPattern = '(?i)href="(a/' & $sType & ')"\'  
+    Local $aMatch = StringRegExp($sHtml, $sPattern, 1)
+    
+    If @error Then
+        _LogError("Download-Link nicht gefunden", "Pattern: " & $sPattern)
+        Return ""
+    EndIf
+    
+    Local $sUrl = $sBaseUrl & $aMatch[0]
+    _LogInfo("Download URL gefunden: " & $sUrl)
+    Return $sUrl
+EndFunc
+
 ; Download und Installation von 7-Zip
 Func CheckAndDownload7Zip()
     _LogInfo("Prüfe 7-Zip Installation")
@@ -21,8 +78,17 @@ Func CheckAndDownload7Zip()
     
     _LogInfo("7-Zip nicht gefunden, starte Download der Console Version")
     
-    ; Download der standalone Console Version direkt von 7-zip.org
-    Local $sURL = "https://7-zip.org/a/7zr.exe"
+    ; Versuche zuerst WinHTTP Methode
+    Local $sURL = _Get7ZipDownloadUrl_HTTP()
+    If $sURL = "" Then
+        _LogInfo("WinHTTP fehlgeschlagen, versuche InetGet...")
+        $sURL = _Get7ZipDownloadUrl_INet()
+    EndIf
+    
+    If $sURL = "" Then
+        _LogError("Konnte Download-URL nicht ermitteln")
+        Return False
+    EndIf
     
     _LogInfo("Starte Download von: " & $sURL)
     _LogInfo("Nach: " & $g_sevenZipPath)
