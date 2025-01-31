@@ -7,74 +7,68 @@
 #include <FileConstants.au3>
 #include "logging.au3"
 
-Global $g_sevenZipPath = @ScriptDir & "\7z.exe"
+Global $g_sevenZipPath = @ScriptDir & "\7za.exe"
 
 ; Download und Installation von 7-Zip
 Func CheckAndDownload7Zip()
     _LogInfo("Prüfe 7-Zip Installation")
     
-    ; Prüfen ob 7z.exe existiert
+    ; Prüfen ob 7za.exe existiert
     If FileExists($g_sevenZipPath) Then
         _LogInfo("7-Zip bereits vorhanden: " & $g_sevenZipPath)
         Return True
     EndIf
     
-    _LogInfo("7-Zip nicht gefunden, starte Download")
+    _LogInfo("7-Zip nicht gefunden, starte Download der Standalone Version")
     
-    ; Download direkt von der aktuellen Version
-    Local $sURL = "https://7-zip.org/a/7z2409-x64.exe"
-    Local $sSetupFile = @ScriptDir & "\7z_setup.exe"
+    ; Download der Standalone Version
+    Local $sURL = "https://7-zip.org/a/7za920.zip"
+    Local $sTempZip = @TempDir & "\7za.zip"
+    Local $sTempDir = @TempDir & "\7za_temp"
     
     _LogInfo("Starte Download von: " & $sURL)
-    _LogInfo("Nach: " & $sSetupFile)
+    _LogInfo("Nach: " & $sTempZip)
     
     ; Download mit InetGet
-    Local $hDownload = InetGet($sURL, $sSetupFile, BitOR($INET_FORCERELOAD, $INET_IGNORESSL))
-    
-    ; Download-Fortschritt überwachen
-    Local $iSize = InetGetSize($sURL)
-    _LogInfo("Download-Größe: " & $iSize & " bytes")
-    
-    While Not InetGetInfo($hDownload, $INET_DOWNLOADCOMPLETE)
-        Local $iBytes = InetGetInfo($hDownload, $INET_DOWNLOADREAD)
-        _LogInfo("Download-Fortschritt: " & Round($iBytes/1024) & " KB / " & Round($iSize/1024) & " KB (" & Round($iBytes/$iSize*100) & "%)")
-        Sleep(250)
-    WEnd
-    
-    InetClose($hDownload)
-    
-    If Not FileExists($sSetupFile) Then
-        _LogError("Download fehlgeschlagen - keine Datei")
+    InetGet($sURL, $sTempZip, $INET_FORCERELOAD)
+    If @error Then
+        _LogError("Download fehlgeschlagen", "Error: " & @error)
         Return False
     EndIf
     
-    Local $iFileSize = FileGetSize($sSetupFile)
-    _LogInfo("Heruntergeladene Dateigröße: " & $iFileSize & " bytes")
+    ; Temporäres Verzeichnis erstellen
+    If Not FileExists($sTempDir) Then DirCreate($sTempDir)
     
-    If $iFileSize < 1000000 Then ; Mindestens ~1MB
-        _LogError("Download fehlgeschlagen - Datei zu klein: " & $iFileSize & " bytes")
+    ; ZIP entpacken (mit Windows-Bordmitteln)
+    _LogInfo("Entpacke 7za.exe")
+    Local $oShell = ObjCreate("Shell.Application")
+    Local $oDir = $oShell.NameSpace($sTempDir)
+    Local $oZip = $oShell.NameSpace($sTempZip)
+    $oDir.CopyHere($oZip.Items(), 16)
+    
+    ; Warten bis Entpacken fertig
+    Sleep(2000)
+    
+    ; 7za.exe in Programmverzeichnis kopieren
+    If FileExists($sTempDir & "\7za.exe") Then
+        _LogInfo("Kopiere 7za.exe nach: " & $g_sevenZipPath)
+        FileCopy($sTempDir & "\7za.exe", $g_sevenZipPath, $FC_OVERWRITE)
+    Else
+        _LogError("7za.exe nicht gefunden nach Entpacken")
         Return False
     EndIf
     
-    ; Setup ausführen
-    _LogInfo("Installiere 7-Zip: " & $sSetupFile)
-    Local $iPID = Run($sSetupFile & " /S /D=" & @ScriptDir, "", @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
-    _LogInfo("Setup gestartet mit PID: " & $iPID)
-    
-    ; Auf Installation warten
-    ProcessWaitClose($iPID)
-    _LogInfo("Setup beendet")
-    
-    ; Setup-Datei aufräumen
-    FileDelete($sSetupFile)
+    ; Temporäre Dateien aufräumen
+    FileDelete($sTempZip)
+    DirRemove($sTempDir, 1)
     
     ; Prüfen ob Installation erfolgreich war
     If FileExists($g_sevenZipPath) Then
-        _LogInfo("7-Zip erfolgreich installiert: " & $g_sevenZipPath)
+        _LogInfo("7-Zip Standalone erfolgreich installiert: " & $g_sevenZipPath)
         Return True
     EndIf
     
-    _LogError("7z.exe nach Installation nicht gefunden")
+    _LogError("7za.exe nach Installation nicht gefunden")
     Return False
 EndFunc
 
