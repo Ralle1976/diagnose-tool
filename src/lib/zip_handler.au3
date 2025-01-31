@@ -7,54 +7,36 @@
 #include <FileConstants.au3>
 #include "logging.au3"
 
-Global $g_sevenZipPath = @ScriptDir & "\7zr.exe"
+Global $g_sevenZipPath = @ScriptDir & "\7z.exe"
 
 ; Download und Installation von 7-Zip
 Func CheckAndDownload7Zip()
     _LogInfo("Prüfe 7-Zip Installation")
     
-    ; Prüfen ob 7zr.exe existiert
+    ; Prüfen ob 7z.exe existiert
     If FileExists($g_sevenZipPath) Then
         _LogInfo("7-Zip bereits vorhanden: " & $g_sevenZipPath)
         Return True
     EndIf
     
-    _LogInfo("7-Zip nicht gefunden, ermittle Download-URL")
+    _LogInfo("7-Zip nicht gefunden, starte Download der Console Version")
     
-    ; Download-Seite laden
-    Local $sHTML = InetGet("https://www.7-zip.org/download.html", "", $INET_FORCERELOAD)
-    Local $sContent = BinaryToString(InetRead("https://www.7-zip.org/download.html"))
+    ; Download der standalone Console Version direkt von 7-zip.org
+    Local $sURL = "https://7-zip.org/a/7zr.exe"
     
-    ; Nach standalone Console Version suchen
-    Local $sPattern = '(?i)<td[^>]*>\s*<a[^>]*href="([^"]*7zr\.exe)"'
-    Local $aResult = StringRegExp($sContent, $sPattern, 1)
+    _LogInfo("Starte Download von: " & $sURL)
+    _LogInfo("Nach: " & $g_sevenZipPath)
+    
+    ; Download mit InetGet
+    Local $hDownload = InetGet($sURL, $g_sevenZipPath, $INET_FORCERELOAD)
     If @error Then
-        _LogError("Konnte Download-Link nicht finden")
+        _LogError("Download fehlgeschlagen", "Error: " & @error)
         Return False
     EndIf
     
-    ; Download-URL zusammenbauen
-    Local $sURL = "https://www.7-zip.org/" & $aResult[0]
-    _LogInfo("Download-URL gefunden: " & $sURL)
-    
-    ; Download starten
-    _LogInfo("Starte Download nach: " & $g_sevenZipPath)
-    
-    Local $hDownload = InetGet($sURL, $g_sevenZipPath, $INET_FORCERELOAD)
-    
-    ; Download-Fortschritt überwachen
-    Local $iSize = InetGetSize($sURL)
-    _LogInfo("Download-Größe: " & $iSize & " bytes")
-    
-    While Not InetGetInfo($hDownload, $INET_DOWNLOADCOMPLETE)
-        Local $iBytes = InetGetInfo($hDownload, $INET_DOWNLOADREAD)
-        Local $iProgress = Round($iBytes/$iSize*100)
-        _LogInfo("Download-Fortschritt: " & Round($iBytes/1024) & " KB / " & Round($iSize/1024) & " KB (" & $iProgress & "%)")
-        Sleep(250)
-    WEnd
-    
     InetClose($hDownload)
     
+    ; Prüfen ob Download erfolgreich war
     If Not FileExists($g_sevenZipPath) Then
         _LogError("Download fehlgeschlagen - keine Datei")
         Return False
@@ -63,7 +45,7 @@ Func CheckAndDownload7Zip()
     Local $iFileSize = FileGetSize($g_sevenZipPath)
     _LogInfo("Heruntergeladene Dateigröße: " & $iFileSize & " bytes")
     
-    If $iFileSize < 100000 Then ; Mindestgröße prüfen
+    If $iFileSize < 100000 Then ; Mindestgröße für exe
         _LogError("Download fehlgeschlagen - Datei zu klein: " & $iFileSize & " bytes")
         Return False
     EndIf
