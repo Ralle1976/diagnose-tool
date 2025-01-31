@@ -7,30 +7,28 @@
 #include <FileConstants.au3>
 #include "logging.au3"
 
-Global $g_sevenZipPath = @ScriptDir & "\7z.exe"
+Global $g_sevenZipPath = @ScriptDir & "\7zr.exe"
 
 ; Download und Installation von 7-Zip
 Func CheckAndDownload7Zip()
     _LogInfo("Prüfe 7-Zip Installation")
     
-    ; Prüfen ob 7z.exe existiert
+    ; Prüfen ob 7zr.exe existiert
     If FileExists($g_sevenZipPath) Then
         _LogInfo("7-Zip bereits vorhanden: " & $g_sevenZipPath)
         Return True
     EndIf
     
-    _LogInfo("7-Zip nicht gefunden, starte Download der Standalone Version")
+    _LogInfo("7-Zip nicht gefunden, starte Download der Console Version")
     
-    ; Download der Extra Version mit Standalone Console
-    Local $sURL = "https://7-zip.org/a/7z2409-extra.7z"
-    Local $sTempFile = @TempDir & "\7z-extra.7z"
-    Local $sTempDir = @TempDir & "\7z_temp"
+    ; Download der Console Version
+    Local $sURL = "https://7-zip.org/a/7zr.exe"
     
     _LogInfo("Starte Download von: " & $sURL)
-    _LogInfo("Nach: " & $sTempFile)
+    _LogInfo("Nach: " & $g_sevenZipPath)
     
-    ; Download mit InetGet und Fortschrittsüberwachung
-    Local $hDownload = InetGet($sURL, $sTempFile, $INET_FORCERELOAD)
+    ; Download direkt in das Zielverzeichnis
+    Local $hDownload = InetGet($sURL, $g_sevenZipPath, $INET_FORCERELOAD)
     
     ; Download-Fortschritt überwachen
     Local $iSize = InetGetSize($sURL)
@@ -45,52 +43,20 @@ Func CheckAndDownload7Zip()
     
     InetClose($hDownload)
     
-    If Not FileExists($sTempFile) Then
+    If Not FileExists($g_sevenZipPath) Then
         _LogError("Download fehlgeschlagen - keine Datei")
         Return False
     EndIf
     
-    ; Temporäres Verzeichnis erstellen
-    If Not FileExists($sTempDir) Then DirCreate($sTempDir)
-    
-    ; Wenn wir hier sind und keine 7z.exe haben, müssen wir zuerst 7zr.exe herunterladen
-    If Not FileExists(@ScriptDir & "\7zr.exe") Then
-        Local $sBootstrapURL = "https://7-zip.org/a/7zr.exe"
-        _LogInfo("Lade 7zr.exe für initiales Entpacken")
-        InetGet($sBootstrapURL, @ScriptDir & "\7zr.exe", $INET_FORCERELOAD)
-    EndIf
-    
-    ; Extra Paket mit 7zr.exe entpacken
-    Local $sCmd = '"' & @ScriptDir & '\7zr.exe" x "' & $sTempFile & '" -o"' & $sTempDir & '" -y'
-    _LogInfo("Entpacke Extra Paket: " & $sCmd)
-    
-    RunWait($sCmd, "", @SW_HIDE)
-    
-    ; 7z.exe ins Zielverzeichnis kopieren
-    If FileExists($sTempDir & "\x64\7z.exe") Then
-        _LogInfo("Kopiere 64-bit 7z.exe")
-        FileCopy($sTempDir & "\x64\7z.exe", $g_sevenZipPath, $FC_OVERWRITE)
-    ElseIf FileExists($sTempDir & "\7z.exe") Then
-        _LogInfo("Kopiere 32-bit 7z.exe")
-        FileCopy($sTempDir & "\7z.exe", $g_sevenZipPath, $FC_OVERWRITE)
-    Else
-        _LogError("Keine 7z.exe im Extra Paket gefunden")
+    Local $iFileSize = FileGetSize($g_sevenZipPath)
+    If $iFileSize < 10000 Then ; Mindestgröße prüfen
+        _LogError("Download fehlgeschlagen - Datei zu klein: " & $iFileSize & " bytes")
+        FileDelete($g_sevenZipPath)
         Return False
     EndIf
     
-    ; Temporäre Dateien aufräumen
-    FileDelete($sTempFile)
-    FileDelete(@ScriptDir & "\7zr.exe") ; Bootstrap exe löschen
-    DirRemove($sTempDir, 1)
-    
-    ; Prüfen ob Installation erfolgreich war
-    If FileExists($g_sevenZipPath) Then
-        _LogInfo("7-Zip erfolgreich installiert: " & $g_sevenZipPath)
-        Return True
-    EndIf
-    
-    _LogError("7z.exe nach Installation nicht gefunden")
-    Return False
+    _LogInfo("7-Zip Console Version erfolgreich installiert: " & $g_sevenZipPath)
+    Return True
 EndFunc
 
 ; ZIP-Datei entpacken
