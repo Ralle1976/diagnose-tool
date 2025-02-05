@@ -1,135 +1,89 @@
-# Entwicklungs-Roadmap
+# Entwicklungsplanung Diagnose-Tool
 
-## Aktueller Stand (31.01.2025)
+## Aktueller Projektstand
+Das Diagnose-Tool befindet sich in der aktiven Entwicklungsphase mit funktionierender Grundfunktionalität für:
+- ZIP-Entpackung mit Passwortschutz
+- SQLite-Datenbankanbindung
+- Grundlegende Datenvisualisierung
 
-### Erreichte Meilensteine ✓
-- ZIP-Handler mit Passwort-Support
-- Automatische 7-Zip Integration
-- Basis-SQLite Funktionalität
-- Logging-System
-- Error-Handler
+## Prioritäre Entwicklungsaufgaben
 
-### Aktuelle Entwicklung
-1. ZIP-System:
-   - [x] Automatischer 7-Zip Download
-   - [x] Passwort-Support
-   - [x] Error-Handling
-   - [ ] Performance-Tests
+### Phase 1: Datenvisualisierung (Q1 2025)
+1. ListView-Performance optimieren
+   - Virtualisierung für große Datensätze
+   - Lazy Loading implementieren
+   - Spaltenbreiten-Optimierung
 
-2. SQLite-Viewer:
-   - [x] Grundfunktionen
-   - [ ] Lazy Loading
-   - [ ] Performance-Optimierung
+2. Erweiterte Filterfunktionen
+   - Komplexe Suchkriterien
+   - Spaltenspezifische Filter
+   - Filter-Historie
 
-3. GUI:
-   - [x] Basis-Interface
-   - [ ] Erweiterte Funktionen
-   - [ ] Benutzer-Feedback
+3. Sortierung verbessern
+   - Multi-Column Sorting
+   - Benutzerdefinierte Sortierreihenfolgen
+   - Performance-Optimierung
 
-## Nächste Schritte
+### Phase 2: Exportfunktionen (Q2 2025)
+1. CSV-Export
+   - Konfigurierbare Trennzeichen
+   - Zeichenkodierung wählbar
+   - Spaltenauswahl
 
-### Immediate Tasks (KW 5)
-1. GitHub Integration:
-   - MCP Server Setup
-   - API-Integration testen
-   - Dokumentation aktualisieren
+2. Excel-Export
+   - XLSX-Format
+   - Formatierungsoptionen
+   - Template-Unterstützung
 
-2. ZIP-Handler Testing:
-   - Verschiedene Dateiformate
-   - Große Dateien
-   - Fehlerszenarien
+3. PDF-Export
+   - Konfigurierbare Layouts
+   - Tabellenformatierung
+   - Headergestaltung
 
-3. GUI-Verbesserungen:
-   - Fortschrittsanzeigen
-   - Error-Dialoge
-   - Statusupdates
+### Phase 3: GUI-Optimierung (Q3 2025)
+1. Kontextmenüs
+   - Spaltenspezifische Aktionen
+   - Schnellzugriff auf Funktionen
+   - Anpassbare Menüs
 
-### Short Term (KW 6-7)
-1. Performance:
-   - SQLite Optimierung
-   - Memory-Management
-   - Große Datensätze
+2. Statusanzeigen
+   - Fortschrittsbalken
+   - Detaillierte Prozessinfos
+   - Fehlerbehandlung
 
-2. Dokumentation:
-   - Code-Kommentare
-   - API-Referenz
-   - Benutzerhandbuch
-
-3. Testing:
-   - Unit-Tests
-   - Integration-Tests
-   - Performance-Tests
-
-### Long Term (KW 8+)
-1. Features:
-   - Erweiterte Filter
-   - Batch-Verarbeitung
-   - Automatisierung
-
-2. Optimierung:
-   - Code-Refactoring
-   - Performance-Tuning
-   - GUI-Polish
-
-3. Distribution:
-   - Release-Build
-   - Installer
-   - Auto-Update
-
-## GitHub Tasks
-
-### Repository
-1. Code-Updates:
-   - Aktuelle Änderungen hochladen
-   - Dokumentation aktualisieren
-   - Issues bearbeiten
-
-2. Branch-Management:
-   - Feature Branches anlegen
-   - Pull Requests reviewen
-   - main Branch aktualisieren
-
-### API-Integration
-1. MCP Server:
-   - API-Zugriff einrichten
-   - Authentifizierung setup
-   - Error-Handling
-
-2. Automatisierung:
-   - Auto-Commits
-   - Issue-Updates
-   - Release-Management
+3. Filterdialoge
+   - Intuitive Bedienung
+   - Vorschau-Funktion
+   - Filter speichern/laden
 
 ## Erfolgskriterien
 
-### Technisch
-- Stabile ZIP-Verarbeitung
-- Performante SQLite-Operationen
-- Robustes Error-Handling
+### Technische Kriterien
+- Verarbeitungszeit für 100.000 Datensätze < 3 Sekunden
+- Speicherverbrauch < 500MB
+- Reaktionszeit der GUI < 100ms
 
-### Benutzer
-- Intuitive Bedienung
-- Klare Fehlermeldungen
-- Responsive GUI
+### Funktionale Kriterien
+- Erfolgreiche Verarbeitung aller ZIP-Formate
+- Fehlerfreie Datenbankoperationen
+- Korrekte Datenexporte
 
-### Entwicklung
-- Sauberer Code
-- Gute Dokumentation
-- Effektive Tests
+### Qualitätskriterien
+- Code-Dokumentation vollständig
+- Testabdeckung > 80%
+- Keine kritischen Bugs
 
-## Review & Release
+## Branch-Management
 
-### Code-Review
-- Wöchentliche Reviews
-- Performance-Checks
-- Security-Audit
+### Entwicklungs-Branches
+- main: Stabile Produktionsversion
+- develop: Aktive Entwicklung
+- feature/*: Neue Funktionen
+- bugfix/*: Fehlerbehebungen
 
-### Testing
-- Automatisierte Tests
-- User-Testing
-- Load-Testing
-
-### Release
-- Version 1.0 Ende KW 8
-- Feature-Complete
-- Dokumentiert
+### Release-Prozess
+1. Code-Review
+2. Testing in develop
+3. Release-Branch erstellen
+4. Final Testing
+5. Merge in main
