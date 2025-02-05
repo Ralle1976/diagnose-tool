@@ -1,118 +1,67 @@
-# Technische Dokumentation & Best Practices
+# Technische Dokumentation Diagnose-Tool
 
-## Core-Komponenten
+## Systemarchitektur
 
-### ZIP-Handler (zip_handler.au3)
-- Automatische 7-Zip Integration
-- Direkte Installation ins Arbeitsverzeichnis
-- Passwort-Support implementiert
-- Download-Manager mit Fortschrittsanzeige
+Das Diagnose-Tool basiert auf einer modularen Drei-Schicht-Architektur:
 
-```autoit
-; Beispiel ZIP-Handler Nutzung
-If Not _ExtractZip($sZipFile, $sDestFolder, $sPassword) Then
-    _LogError("ZIP-Verarbeitung fehlgeschlagen")
-    Return False
-EndIf
-```
+### Präsentationsschicht (GUI)
+- Implementiert in main.au3
+- Benutzeroberfläche mit AutoIt GUI-Elementen
+- Event-basierte Benutzerinteraktion
+- Statusanzeigen für laufende Prozesse
 
-### SQLite-System (sqlite_*.au3)
-- Optimierte Datenbankzugriffe
-- Lazy Loading für große Datensätze
-- Error-Handling integriert
+### Geschäftslogik
+- ZIP-Verarbeitung mit 7za.exe Integration
+- Datenbankoperationen über SQLite3.dll
+- Validierung und Fehlerbehandlung
+- Temporäre Dateiverwaltung
 
-### Logging-System (logging.au3)
-- Zentralisiertes Logging
-- Multi-Level Support (Info, Error, Debug)
-- Datei- und Konsolenausgabe
+### Datenhaltung
+- SQLite-Datenbank Anbindung
+- Dynamische Tabellenverwaltung
+- Konfigurationsdateien (settings.ini)
+- Temporäre Datenspeicherung
 
-```autoit
-_LogInfo("Prozess gestartet")
-_LogError("Fehler aufgetreten", "Details: " & @error)
-_LogDebug("Debug-Information")
-```
+## Technische Abhängigkeiten
 
-## Best Practices
+- AutoIt v3.3.16.1+
+- SQLite3.dll (32/64-bit kompatibel)
+- 7za.exe v21.07
+- Windows 7+ Betriebssystem
 
-### Error-Handling
-- Immer _LogError für Fehler nutzen
-- Detaillierte Fehlermeldungen
-- Benutzerfreundliche Ausgaben
+## Entwicklungsrichtlinien
 
-### Performance
-- Lazy Loading für große Datenmengen
-- Memory-Management beachten
-- Statusanzeigen für lange Operationen
+### Code-Organisation
+- Modulare Struktur mit klarer Trennung der Zuständigkeiten
+- Wiederverwendbare Funktionen in separaten Include-Dateien
+- Konsistente Fehlerbehandlung und Logging
 
-### Code-Style
-- Klare Funktionsnamen
-- Ausführliche Kommentare
-- Modulare Struktur
+### Namenskonventionen
+- Funktionen: PascalCase mit beschreibenden Präfixen
+- Variablen: Hungarian Notation für Typklarheit
+- Konstanten: Großbuchstaben mit Unterstrichen
 
-## GitHub Integration
+### Performance-Optimierung
+- Effiziente SQL-Abfragen mit Index-Nutzung
+- Minimierung von GUI-Updates
+- Speichereffiziente Dateiverarbeitung
 
-### API-Nutzung
-```autoit
-; Beispiel GitHub API via MCP
-Local $result = create_or_update_file({
-    owner: "Ralle1976",
-    repo: "diagnose-tool",
-    path: "README.md",
-    message: "Update Documentation",
-    content: $sContent,
-    branch: "main"
-})
-```
+## Debugging und Testing
 
-### Repository-Management
-- Branch-Strategie: main für stabile Versionen
-- Pull-Requests für Features
-- Issue-Tracking für Bugs
+- Integriertes AutoIt Debug-System
+- Logging-Framework für Fehleranalyse
+- Testumgebung für Kernfunktionen
 
-## Testing
+## Build und Deployment
 
-### Unit-Tests
-- Komponenten einzeln testen
-- Edge-Cases abdecken
-- Automatisierte Tests
+### Entwicklungsumgebung
+- SciTE4AutoIt als primärer Editor
+- AutoIt3 Wrapper für Kompilierung
+- Versionskontrolle über Git/GitHub
 
-### Integration-Tests
-- ZIP-Handler Tests
-- SQLite Performance
-- GUI-Tests
-
-## Deployment
-
-### Voraussetzungen
-- AutoIt v3
-- Admin-Rechte (für 7-Zip)
-- Internet für 7-Zip Download
-
-### Build-Prozess
-- Konfiguration prüfen
-- Dependencies sicherstellen
-- Logging aktivieren
-
-## Dokumentation
-
-### Code-Dokumentation
-- Funktions-Header
-- Parameter-Beschreibungen
-- Beispiel-Nutzung
-
-### User-Dokumentation
-- Installation
-- Konfiguration
-- Troubleshooting
-
-## Sicherheit
-
-### Passwort-Handling
-- Sichere Speicherung
-- Verschlüsselte Übertragung
-- Logging ohne Passwörter
-
-### Fehlerbehandlung
-- Keine sensiblen Daten in Logs
-- Sichere Temp-Verzeichnisse
-- Aufräumen nach Verarbeitung
+### Release-Prozess
+1. Code-Review und Testing
+2. Versionsnummer aktualisieren
+3. Kompilierung und Paketierung
+4. Release-Notes erstellen
+5. Deployment auf Zielsysteme
