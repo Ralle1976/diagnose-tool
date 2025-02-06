@@ -1,62 +1,122 @@
-# Nächste Entwicklungsschritte
+# Übergabedokumentation und nächste Entwicklungsschritte
 
-## Aktuelle Prioritäten
+## Projektübersicht und Zugriffsrechte
 
-### 1. Integration der Komponenten
-- SQL-Optimizer in Hauptanwendung einbinden
-- Cache-System mit Lazy Loading verbinden
-- Performance-Tests durchführen
-- Memory-Monitoring implementieren
+Das Diagnose-Tool ist über zwei Hauptzugangspunkte verfügbar:
 
-### 2. Testing & Qualitätssicherung
-- Unit-Tests erstellen
-- GUI-Tests durchführen
-- Performance-Messungen
-- Speicherverbrauch analysieren
-- Fehlerbehandlung testen
+Lokaler Entwicklungspfad:
+```
+C:\Users\tango\Downloads\diagnose-tool-main\diagnose-tool-optimized
+```
 
-### 3. Dokumentation
-- Inline-Code-Dokumentation vervollständigen
-- API-Referenz erstellen
-- Beispiel-Szenarien dokumentieren
-- Troubleshooting-Guide erstellen
+GitHub-Repository:
+```
+https://github.com/Ralle1976/diagnose-tool/
+```
 
-## Offene Punkte
+Der MCP-Server ermöglicht den Zugriff auf das lokale Dateisystem sowie die GitHub-API für Versionskontrolle und Dokumentation.
 
-### Performance
-- [ ] Query-Optimierung für große Datensätze
-- [ ] Cache-Strategie feinjustieren
-- [ ] Speicher-Monitoring verbessern
-- [ ] GUI-Response optimieren
+## Aktueller Entwicklungsstand
 
-### GUI
-- [ ] Kontextmenüs erweitern
-- [ ] Drag & Drop verbessern
-- [ ] Status-Updates verfeinern
-- [ ] Fehler-Dialoge verbessern
+Das Diagnose-Tool verfügt derzeit über folgende funktionierende Kernfunktionen:
 
-### Sicherheit
-- [ ] Passwort-Verschlüsselung testen
-- [ ] Eingabevalidierung erweitern
-- [ ] Berechtigungssystem implementieren
-- [ ] Logging-System ausbauen
+1. ZIP-Dateiverarbeitung
+   - Erfolgreiches Entpacken von ZIP-Dateien
+   - Korrekte Passwortverarbeitung
+   - Temporäre Dateiverwaltung
 
-## Timeline
-1. Woche: Integration & Tests
-2. Woche: Performance & Optimierung
-3. Woche: Dokumentation & Review
-4. Woche: Finale Tests & Release
+2. SQLite-Datenbankintegration
+   - Verbindungsaufbau zur Datenbank
+   - Auslesen und Anzeigen von Tabellenstrukturen
+   - Darstellung von Tabelleninhalten
 
-## Entwicklungsrichtlinien
-- Modular entwickeln
-- Tests parallel schreiben
-- Dokumentation aktuell halten
-- Regelmäßige Commits
-- Code-Reviews durchführen
+3. Benutzeroberfläche
+   - Grundlegende GUI-Funktionalität
+   - Tabellenauswahl über Dropdown-Menü
+   - ListView-Darstellung der Daten
 
-## Erfolgskriterien
-1. Alle Tests erfolgreich
-2. Performance-Ziele erreicht
-3. Dokumentation vollständig
-4. Code-Review bestanden
-5. Benutzer-Feedback positiv
+## Ausstehende Implementierungen
+
+### 1. ListView-Funktionalitäten
+Priorität: Hoch
+- Implementierung der Zellenwert-Kopierung
+- Hinzufügen von Kontextmenü-Optionen
+- Unterstützung für Tastenkombinationen (z.B. Strg+C)
+- Doppelklick-Funktionalität für Zelleninhalte
+
+### 2. Filterungssystem
+Priorität: Mittel
+- Korrektur der Filterimplementierung
+- Sichtbare Filtereffekte in der ListView
+- Benutzerfreundliche Filteroptionen
+- Filterstatusanzeige
+
+### 3. Exportfunktionen
+Priorität: Mittel
+- Separate Auswahl für Exportformate
+  - CSV-Export
+  - XML-Export
+  - JSON-Export
+- Implementierung der tatsächlichen Exportfunktionalität
+- Zielverzeichnisauswahl
+- Exportstatusanzeige
+
+## Implementierungsrichtlinien
+
+Um die Stabilität des bestehenden Codes zu gewährleisten, sind folgende Richtlinien zu beachten:
+
+1. Modulare Entwicklung
+   - Neue Funktionen in separate Module auslagern
+   - Bestehende Funktionalität nicht überschreiben
+   - Klare Schnittstellendefinition
+
+2. Versionskontrolle
+   - Regelmäßige Commits mit aussagekräftigen Nachrichten
+   - Separate Branches für neue Funktionen
+   - Pull Requests für Code-Reviews
+
+3. Dokumentation
+   - Aktualisierung der MD-Dateien bei Änderungen
+   - Kommentierung neuer Funktionen
+   - Aktualisierung der Entwicklungsdokumentation
+
+## Entwicklungsprioritäten
+
+Die Implementierung sollte in folgender Reihenfolge erfolgen:
+
+1. ListView-Funktionalitäten
+   - Basis für weitere Funktionen
+   - Unmittelbarer Benutzernutzen
+   - Grundlegende Benutzererfahrung
+
+2. Exportfunktionen
+   - Wichtig für Datenextraktion
+   - Relativ unabhängig von anderen Funktionen
+   - Klare Erfolgsmetrik
+
+3. Filterungssystem
+   - Aufbauend auf ListView-Funktionalitäten
+   - Komplexere Integration
+   - Benötigt umfangreiche Tests
+
+## Systemanforderungen und Abhängigkeiten
+
+- AutoIt v3.3.16.1 oder höher
+- SQLite3.dll für Datenbankoperationen
+- 7za.exe für ZIP-Verarbeitung
+- Konfigurierte settings.ini
+
+## Bekannte Probleme
+
+1. Export-Dropdown zeigt Formate als einen String
+2. Fehlende Filterfunktionalität trotz GUI-Elementen
+3. Eingeschränkte ListView-Interaktionsmöglichkeiten
+
+## Nächste konkrete Schritte
+
+1. Implementierung des ListView-Kontextmenüs
+2. Korrektur der Export-Format-Auswahl
+3. Aktivierung der Filterungsfunktionalität
+4. Hinzufügen von Tastaturkürzeln
+
+Jeder dieser Schritte sollte einzeln implementiert und getestet werden, um die Stabilität des Systems zu gewährleisten.
