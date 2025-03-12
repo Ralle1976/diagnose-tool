@@ -1,106 +1,134 @@
 #include-once
 #include <SQLite.au3>
-#include <SQLite.dll.au3>
-#include <Array.au3>
-
-Global $g_sqliteDLL = @ScriptDir & "\sqlite3.dll"
-
-Func InitializeSQLite()
-    _LogInfo("Initialisiere SQLite")
-    
-    If Not FileExists($g_sqliteDLL) Then
-        _LogError("SQLite DLL nicht gefunden", "Pfad: " & $g_sqliteDLL)
-        Return False
-    EndIf
-    
+#include "logging.au3"
+#include "error_handler.au3"
+;~ Global $g_sqliteDLL = @ScriptDir & "\Lib\sqlite3.dll"
+; SQLite-Initialisierung
+Func _SQLiteHandler_Init()
+    ; SQLite-Bibliothek initialisieren
     _SQLite_Startup($g_sqliteDLL)
     If @error Then
-        _LogError("SQLite Initialisierung fehlgeschlagen", "Error: " & @error)
+        _LogError("SQLite-Initialisierung fehlgeschlagen")
         Return False
     EndIf
-    
+
+    _LogInfo("SQLite erfolgreich initialisiert")
     Return True
 EndFunc
 
-Func OpenDatabase($dbFile)
-    _LogInfo("Öffne SQLite Datenbank", "Datei: " & $dbFile)
-    
-    Local $hDB
-    _SQLite_Open($dbFile, $hDB)
-    If @error Then
-        _LogError("Fehler beim Öffnen der Datenbank", "Datei: " & $dbFile & @CRLF & "Error: " & @error)
-        Return 0
+; Datenbank öffnen
+Func _SQLiteHandler_OpenDatabase($sDbPath)
+    ; Überprüfen, ob Datenbankdatei existiert
+    If Not FileExists($sDbPath) Then
+        _LogError("Datenbank nicht gefunden: " & $sDbPath)
+        Return SetError(1, 0, False)
     EndIf
-    
-    Return $hDB
+
+    ; Datenbank-Handle öffnen
+    Local $hDatabase = _SQLite_Open($sDbPath)
+    If @error Then
+        _LogError("Fehler beim Öffnen der Datenbank: " & $sDbPath)
+        Return SetError(2, 0, False)
+    EndIf
+
+    _LogInfo("Datenbank geöffnet: " & $sDbPath)
+    Return $hDatabase
 EndFunc
 
-Func CloseDatabase($hDB)
-    If $hDB Then
-        _LogDebug("Schließe Datenbankverbindung")
-        _SQLite_Close($hDB)
+; Query ausführen
+Func _SQLiteHandler_Query($hDatabase, $sQuery)
+    If $hDatabase = 0 Then
+        _LogError("Ungültiges Datenbank-Handle")
+        Return SetError(1, 0, False)
+    EndIf
+
+    ; Query vorbereiten
+    Local $hQuery
+    _SQLite_Query($hDatabase, $sQuery, $hQuery)
+    If @error Then
+        _LogError("SQL-Query-Fehler: " & $sQuery)
+        Return SetError(2, 0, False)
+    EndIf
+
+    _LogInfo("Query ausgeführt: " & $sQuery)
+    Return $hQuery
+EndFunc
+
+; Daten abrufen
+Func _SQLiteHandler_FetchData($hQuery, ByRef $aRow)
+    Local $iResult = _SQLite_FetchData($hQuery, $aRow)
+
+    Switch $iResult
+        Case $SQLITE_ROW
+            Return True
+        Case $SQLITE_DONE
+            Return False
+        Case Else
+            _LogError("Fehler beim Abrufen von Daten")
+            Return SetError(1, 0, False)
+    EndSwitch
+EndFunc
+
+; Query finalisieren
+Func _SQLiteHandler_FinalizeQuery($hQuery)
+    If $hQuery Then
+        _SQLite_QueryFinalize($hQuery)
+        _LogInfo("Query finalisiert")
     EndIf
 EndFunc
 
-Func GetTableInfo($hDB, $table)
-    _LogDebug("Hole Tabelleninformationen", "Tabelle: " & $table)
-    
-    Local $aResult
-    Local $query = "PRAGMA table_info(" & $table & ")"
-    
-    _SQLite_GetTable2d($hDB, $query, $aResult)
-    If @error Then
-        _LogError("Fehler beim Abfragen der Tabelleninformation", "Query: " & $query & @CRLF & "Error: " & @error)
-        Return 0
+; Datenbank schließen
+Func _SQLiteHandler_CloseDatabase($hDatabase)
+    If $hDatabase Then
+        _SQLite_Close($hDatabase)
+        _LogInfo("Datenbank geschlossen")
     EndIf
-    
-    Return $aResult
 EndFunc
 
-Func ListTables($hDB)
-    _LogDebug("Liste alle Tabellen")
-    
-    Local $aResult
-    Local $query = "SELECT name FROM sqlite_master WHERE type='table'"
-    
-    _SQLite_GetTable2d($hDB, $query, $aResult)
+; SQLite-Bibliothek herunterfahren
+Func _SQLiteHandler_Shutdown()
+    _SQLite_Shutdown()
+    _LogInfo("SQLite-Bibliothek heruntergefahren")
+EndFunc
+
+; Tabellen auflisten
+Func _SQLiteHandler_ListTables($hDatabase)
+    If $hDatabase = 0 Then
+        _LogError("Ungültiges Datenbank-Handle")
+        Return SetError(1, 0, False)
+    EndIf
+
+    Local $aResult, $iRows, $iColumns
+    _SQLite_GetTable2D($hDatabase, "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name", $aResult, $iRows, $iColumns)
+
     If @error Then
-        _LogError("Fehler beim Abfragen der Tabellenliste", "Error: " & @error)
-        Return 0
+        _LogError("Fehler beim Auflisten der Tabellen")
+        Return SetError(2, 0, False)
     EndIf
-    
-    Local $aTables[0]
-    If UBound($aResult) > 1 Then
-        ReDim $aTables[UBound($aResult) - 1]
-        For $i = 1 To UBound($aResult) - 1
-            $aTables[$i - 1] = $aResult[$i][0]
-        Next
-    EndIf
-    
+
+    ; Konvertiere Ergebnis in einfaches Array
+    Local $aTables[$iRows]
+    For $i = 1 To $iRows
+        $aTables[$i-1] = $aResult[$i][0]
+    Next
+
     Return $aTables
 EndFunc
 
-Func ExecuteQuery($hDB, $query, ByRef $result)
-    _LogDebug("Führe SQL Query aus", "Query: " & $query)
-    
-    _SQLite_GetTable2d($hDB, $query, $result)
-    If @error Then
-        _LogError("Fehler beim Ausführen der Query", "Query: " & $query & @CRLF & "Error: " & @error)
-        Return False
+; Tabellenschema abrufen
+Func _SQLiteHandler_GetTableSchema($hDatabase, $sTableName)
+    If $hDatabase = 0 Then
+        _LogError("Ungültiges Datenbank-Handle")
+        Return SetError(1, 0, False)
     EndIf
-    
-    Return True
-EndFunc
 
-Func GetTableData($hDB, $table, $limit = 100)
-    _LogInfo("Hole Tabellendaten", "Tabelle: " & $table & @CRLF & "Limit: " & $limit)
-    
-    Local $aResult
-    Local $query = "SELECT * FROM " & $table & " LIMIT " & $limit
-    
-    If Not ExecuteQuery($hDB, $query, $aResult) Then
-        Return 0
+    Local $aResult, $iRows, $iColumns
+    _SQLite_GetTable2D($hDatabase, "PRAGMA table_info(" & $sTableName & ")", $aResult, $iRows, $iColumns)
+
+    If @error Then
+        _LogError("Fehler beim Abrufen des Tabellenschemas: " & $sTableName)
+        Return SetError(2, 0, False)
     EndIf
-    
+
     Return $aResult
 EndFunc
