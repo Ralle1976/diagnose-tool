@@ -1,5 +1,6 @@
 #include-once
 #include <GUIConstantsEx.au3>
+#include <WinAPI.au3>
 #include "logging.au3"
 
 Func _Settings_ShowDialog()
@@ -33,10 +34,18 @@ Func _Settings_ShowDialog()
                 
             Case $idShowPW
                 If BitAND(GUICtrlRead($idShowPW), $GUI_CHECKED) Then
-                    GUICtrlSetStyle($idPassword, -1, BitXOR($ES_PASSWORD, $ES_PASSWORD))
+                    ; Passwort anzeigen (setze den Stil ohne ES_PASSWORD)
+                    Local $currentStyle = _WinAPI_GetWindowLong(GUICtrlGetHandle($idPassword), $GWL_STYLE)
+                    $currentStyle = BitAND($currentStyle, BitNOT($ES_PASSWORD))
+                    _WinAPI_SetWindowLong(GUICtrlGetHandle($idPassword), $GWL_STYLE, $currentStyle)
                 Else
-                    GUICtrlSetStyle($idPassword, -1, BitOR($ES_PASSWORD, $ES_PASSWORD))
+                    ; Passwort verbergen (setze den Stil mit ES_PASSWORD)
+                    Local $currentStyle = _WinAPI_GetWindowLong(GUICtrlGetHandle($idPassword), $GWL_STYLE)
+                    $currentStyle = BitOR($currentStyle, $ES_PASSWORD)
+                    _WinAPI_SetWindowLong(GUICtrlGetHandle($idPassword), $GWL_STYLE, $currentStyle)
                 EndIf
+                ; Neuzeichnen des Eingabefelds erforderlich
+                _WinAPI_RedrawWindow(GUICtrlGetHandle($idPassword))
                 
             Case $idOK
                 ; Einstellungen speichern
