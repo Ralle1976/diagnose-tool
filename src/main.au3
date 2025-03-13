@@ -28,11 +28,13 @@ Global Const $g_sqliteDLL = @ScriptDir & "\Lib\sqlite3.dll"
 #include "lib/logging.au3"
 #include "lib/error_handler.au3"
 #include "lib/db_functions.au3"
+#include "lib/db_functions_ext.au3"
 #include "lib/missing_functions.au3"
 #include "lib/gui_functions.au3"
 #include "lib/export_functions.au3"
 #include "lib/decrypt_functions.au3"
 #include "lib/listview_copy.au3"
+#include "lib/7z_functions.au3"
 
 Global $iExListViewStyle = BitOR(	$LVS_EX_BORDERSELECT, _
                                     $LVS_EX_ONECLICKACTIVATE, _
@@ -53,6 +55,7 @@ Func _CreateMainGUI()
     ; Menü erstellen
     Local $idFile = GUICtrlCreateMenu("&Datei")
     $idFileOpen = GUICtrlCreateMenuItem("ZIP öffnen...", $idFile)
+    $idFileDBOpen = GUICtrlCreateMenuItem("Datenbank öffnen...", $idFile)
     GUICtrlCreateMenuItem("", $idFile) ; Separator
     $idSettings = GUICtrlCreateMenuItem("Einstellungen...", $idFile)
     GUICtrlCreateMenuItem("", $idFile) ; Separator
@@ -65,18 +68,19 @@ Func _CreateMainGUI()
     ; Toolbar
     Local $idToolbar = GUICtrlCreateGroup("", 2, 2, 996, 45)
     $idBtnOpen = GUICtrlCreateButton("ZIP öffnen", 10, 15, 100, 25)
-    $idBtnExport = GUICtrlCreateButton("Exportieren", 120, 15, 100, 25)
+    $idBtnDBOpen = GUICtrlCreateButton("DB öffnen", 120, 15, 100, 25)
+    $idBtnExport = GUICtrlCreateButton("Exportieren", 230, 15, 100, 25)
     GUICtrlSetState($idBtnExport, $GUI_DISABLE)
 
     ; Tabellen-Auswahl
-    GUICtrlCreateLabel("Tabelle:", 230, 20, 50, 20)
-    $idTableCombo = GUICtrlCreateCombo("", 290, 15, 200, 25)
+    GUICtrlCreateLabel("Tabelle:", 340, 20, 50, 20)
+    $idTableCombo = GUICtrlCreateCombo("", 400, 15, 200, 25)
     GUICtrlSetState($idTableCombo, $GUI_DISABLE)
 
-    $idBtnRefresh = GUICtrlCreateButton("Aktualisieren", 500, 15, 100, 25)
+    $idBtnRefresh = GUICtrlCreateButton("Aktualisieren", 610, 15, 100, 25)
     GUICtrlSetState($idBtnRefresh, $GUI_DISABLE)
 
-    $idBtnFilter = GUICtrlCreateButton("Filter", 610, 15, 100, 25)
+    $idBtnFilter = GUICtrlCreateButton("Filter", 720, 15, 100, 25)
     GUICtrlSetState($idBtnFilter, $GUI_DISABLE)
 
     GUICtrlCreateGroup("", -99, -99, 1, 1)
@@ -173,6 +177,13 @@ FUnc Main()
                     $g_sLastDir = StringLeft($sFile, StringInStr($sFile, "\", 0, -1))
                     _ProcessZipFile($sFile)
                 EndIf
+                
+            Case $idFileDBOpen, $idBtnDBOpen
+                Local $sFile = FileOpenDialog("Datenbank öffnen", $g_sLastDir, "SQLite Datenbanken (*.db;*.db3)", $FD_FILEMUSTEXIST)
+                If Not @error Then
+                    $g_sLastDir = StringLeft($sFile, StringInStr($sFile, "\", 0, -1))
+                    _OpenDatabaseFile($sFile)
+                EndIf
 
             Case $idTableCombo
                 If Not $g_bIsLoading Then
@@ -246,7 +257,7 @@ FUnc Main()
                         Local $iRow = $aSelected[$i]
                         For $j = 0 To _GUICtrlListView_GetColumnCount($g_idListView) - 1
                             If $j > 0 Then $sSelection &= ";"
-                            Local $sText = _GUICtrlListView_GetItem($g_idListView, $iRow, $i)
+                            Local $sText = _GUICtrlListView_GetItem($g_idListView, $iRow, $j)
                             If IsArray($sText) Then
                                 $sSelection &= $sText[3]
                             EndIf
