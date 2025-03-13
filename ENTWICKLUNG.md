@@ -25,8 +25,9 @@ diagnose-tool/
 │   └── lib/                  # Bibliotheken und Module
 │       ├── advanced_filter.au3    # Erweiterte Filterfunktionen
 │       ├── db_functions.au3       # Datenbankfunktionen
+│       ├── db_functions_ext.au3   # Erweiterte DB-Funktionen
 │       ├── db_viewer.au3          # Datenbankansicht
-│       ├── decrypt_functions.au3  # Entschlüsselungsfunktionen
+│       ├── 7z_functions.au3       # 7-Zip-Funktionen
 │       ├── error_handler.au3      # Fehlerbehandlung
 │       ├── export_functions.au3   # Exportfunktionen
 │       ├── filter_functions.au3   # Filterfunktionen
@@ -57,13 +58,14 @@ Das Diagnose-Tool basiert auf einer modularen Architektur mit klarer Trennung de
 1. **Benutzeroberfläche (GUI)**: Darstellung der Daten und Interaktion mit dem Benutzer
 2. **Datenbankmodul**: Verbindung zur SQLite-Datenbank und Datenabfragen
 3. **ZIP-Verarbeitung**: Entpacken von ZIP-Dateien mit 7-Zip
-4. **Systemfunktionen**: Initialisierung, Konfiguration und Aufräumen
-5. **Hilfsfunktionen**: Logging, Fehlerbehandlung, etc.
+4. **7-Zip-Integration**: Automatische Installation von 7-Zip bei Bedarf
+5. **Systemfunktionen**: Initialisierung, Konfiguration und Aufräumen
+6. **Hilfsfunktionen**: Logging, Fehlerbehandlung, etc.
 
 ### Datenfluss
 
-1. Der Benutzer öffnet eine ZIP-Datei
-2. Die ZIP-Datei wird mit 7-Zip entpackt
+1. Der Benutzer öffnet eine ZIP-Datei oder direkt eine SQLite-Datenbank
+2. Bei ZIP-Dateien: Die Datei wird mit 7-Zip entpackt (wird bei Bedarf automatisch heruntergeladen)
 3. Enthaltene SQLite-Datenbanken werden identifiziert
 4. Tabellen der Datenbank werden geladen und im Dropdown-Menü angezeigt
 5. Bei Tabellenauswahl werden die Daten in der ListView angezeigt
@@ -88,19 +90,22 @@ Wichtige Funktionen:
 - `_InitSystem()`: Initialisiert das System (SQLite, Logging, Temporäre Verzeichnisse)
 - `_Cleanup()`: Bereinigt Ressourcen beim Programmende
 
-### Datenbankfunktionen (db_functions.au3)
+### Datenbankfunktionen (db_functions.au3, db_functions_ext.au3)
 
 Enthält Funktionen für den Datenbankzugriff und die Datenvisualisierung.
 
 Wichtige Funktionen:
 - `_DB_Connect()`: Verbindung zur Datenbank herstellen
 - `_LoadDatabaseData()`: Daten aus der aktuellen Tabelle laden
+- `_OpenDatabaseFile()`: Direkte Öffnung einer Datenbankdatei
 
-### ZIP-Verarbeitung (zip_handler.au3)
+### 7-Zip und ZIP-Verarbeitung (7z_functions.au3, zip_handler.au3)
 
-Modul zur Verarbeitung von ZIP-Dateien mit 7-Zip.
+Module zur Verarbeitung von ZIP-Dateien mit 7-Zip und automatischer 7-Zip Installation.
 
 Wichtige Funktionen:
+- `_Get7ZipDownloadUrl()`: Ermittelt die aktuelle Download-URL von 7-Zip
+- `CheckAndDownload7Zip()`: Überprüft und installiert 7-Zip bei Bedarf
 - `_ProcessZipFile()`: Verarbeitet eine ZIP-Datei (Entpacken, Datenbank öffnen)
 
 ### Fehlermanagement (error_handler.au3)
@@ -200,6 +205,13 @@ EndIf
 - Vermeiden Sie unnötige GUI-Updates während Datenoperationen
 - Temporäre Dateien regelmäßig bereinigen
 
+### Sicherheitsrichtlinien
+
+- Sensible Daten nicht im Quellcode speichern
+- Passwortinformationen in separaten, nicht versionierten Konfigurationsdateien ablegen
+- Automatisch heruntergeladene Programme auf Integrität prüfen
+- Benutzerrechte beachten (UAC in Windows)
+
 ## Bekannte Probleme und Lösungen
 
 ### Problem: Langsames Laden großer Tabellen
@@ -234,6 +246,15 @@ $sQuery = "SELECT * FROM " & $g_sCurrentTable & " LIMIT " & $iOffset & ", " & $i
 - Fortschrittsanzeige für den Entpackvorgang
 - Chunked Processing für große Archive
 
+### Problem: 7-Zip Download schlägt fehl
+
+**Symptom**: Der automatische Download von 7-Zip funktioniert nicht.
+
+**Lösung**:
+- Implementieren Sie alternative Download-Quellen
+- Verbessern Sie die Fehlerbehandlung bei HTTP-Fehlern
+- Fügen Sie eine manuelle Installationsoption hinzu
+
 ## Entwicklungsaufgaben
 
 ### Kurzfristige Aufgaben
@@ -265,7 +286,7 @@ $sQuery = "SELECT * FROM " & $g_sCurrentTable & " LIMIT " & $iOffset & ", " & $i
    - Log-Viewer implementieren
    - Remote-Logging-Optionen
 
-3. **Sicherheitsfunktionen**
+3. **Sicherheitsfunktionen verbessern**
    - Verbesserte Passwortverwaltung
    - Datenverschlüsselung für sensible Informationen
    - Berechtigungssystem für verschiedene Benutzer
@@ -302,6 +323,12 @@ $sQuery = "SELECT * FROM " & $g_sCurrentTable & " LIMIT " & $iOffset & ", " & $i
    - Release-Tags für jede Version
    - Changelogs für jede Version
 
+### Sensible Daten
+
+- Passwortinformationen niemals im Repository speichern
+- Verwenden Sie `.gitignore` für sensible Dateien
+- Mustervorlagen für Konfigurationsdateien bereitstellen
+
 ### Release-Prozess
 
 1. Mergen des `develop`-Zweigs in `main`
@@ -319,6 +346,7 @@ $sQuery = "SELECT * FROM " & $g_sCurrentTable & " LIMIT " & $iOffset & ", " & $i
 - Datenbank-Integration
 - ZIP-Verarbeitung
 - Fehlerbehandlung
+- 7-Zip Download und Installation
 
 ### Automatisierte Tests
 
@@ -335,6 +363,6 @@ $sQuery = "SELECT * FROM " & $g_sCurrentTable & " LIMIT " & $iOffset & ", " & $i
 
 ## Fazit und Ausblick
 
-Das Diagnose-Tool ist eine leistungsfähige Anwendung zur Analyse von SQLite-Datenbanken in ZIP-Archiven. Die modulare Architektur ermöglicht eine einfache Erweiterung und Wartung. Mit den geplanten Entwicklungsaufgaben wird das Tool kontinuierlich verbessert, um den Bedürfnissen der Benutzer gerecht zu werden.
+Das Diagnose-Tool ist eine leistungsfähige Anwendung zur Analyse von SQLite-Datenbanken in ZIP-Archiven oder als separate Dateien. Die modulare Architektur ermöglicht eine einfache Erweiterung und Wartung. Mit den geplanten Entwicklungsaufgaben wird das Tool kontinuierlich verbessert, um den Bedürfnissen der Benutzer gerecht zu werden.
 
 Die größten Herausforderungen liegen in der Performance-Optimierung für große Datensätze und der Implementierung erweiterter Filterfunktionen. Durch konsequente Anwendung der Entwicklungsrichtlinien und sorgfältige Tests wird die Qualität und Zuverlässigkeit des Tools auch in Zukunft gewährleistet.
